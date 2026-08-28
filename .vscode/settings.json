@@ -1,0 +1,32 @@
+{
+  // ── 代理（v2ray 10808）──
+  "http.proxy": "http://127.0.0.1:10808",
+  "https.proxy": "http://127.0.0.1:10808",
+  "http.noProxy": "localhost,127.0.0.1",
+
+  // ── Gradle ──
+  "java.import.gradle.java.home": "${env:JAVA_HOME}",
+  "java.import.gradle.wrapper.java.home": "${env:JAVA_HOME}",
+  "gradle.nestedSettingsSearch.enabled": true,
+
+  // ── Kotlin ──
+  "kotlin.languageServer.enabled": true,
+
+  // ── 编辑器 ──
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "mathiasfrohlich.Kotlin",
+
+  // ── 文件排除 ──
+  "files.exclude": {
+    "**/.gradle": true,
+    "**/build": true,
+    "**/.idea": true,
+    "**/.kotlin": true
+  },
+  "search.exclude": {
+    "**/.gradle": true,
+    "**/build": true,
+    "**/.idea": true,
+    "**/.kotlin": true
+  }
+}

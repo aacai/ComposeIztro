@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "mathiasfrohlich.Kotlin",
+    "naco-siren.gradle-language",
+    "gmlexe.gitlens",
+    "nicolo-ribaudo.chromatic-fragments",
+    "editorconfig.editorconfig",
+    "redhat.java",
+    "vscjava.vscode-gradle"
+  ]
+}
