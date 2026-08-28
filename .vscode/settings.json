@@ -1,32 +1,56 @@
 {
-  // ── 代理（v2ray 10808）──
-  "http.proxy": "http://127.0.0.1:10808",
-  "https.proxy": "http://127.0.0.1:10808",
-  "http.noProxy": "localhost,127.0.0.1",
+  "terminal.integrated.env.osx": {
+    "JAVA_HOME": "/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+  },
+  "terminal.integrated.env.windows": {
+    "JAVA_HOME": "${env:JAVA_HOME}"
+  },
+  "terminal.integrated.env.linux": {
+    "JAVA_HOME": "${env:JAVA_HOME}"
+  },
+  "gradle.reuseTerminal": true,
+  "gradle.focusTaskInExplorer": true,
 
-  // ── Gradle ──
-  "java.import.gradle.java.home": "${env:JAVA_HOME}",
-  "java.import.gradle.wrapper.java.home": "${env:JAVA_HOME}",
-  "gradle.nestedSettingsSearch.enabled": true,
-
-  // ── Kotlin ──
   "kotlin.languageServer.enabled": true,
+  "kotlin.languageServer.script.compiler.jvm.target": "17",
+  "kotlin.trace.server": "off",
+  "kotlin.compiler.jvm.target": "17",
+  "kotlin.diagnostics.enabled": false,
+  "kotlin.indexing.enabled": true,
+  "[kotlin]": {
+    "editor.defaultFormatter": "fwcd.kotlin",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
 
-  // ── 编辑器 ──
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "mathiasfrohlich.Kotlin",
+  "java.import.exclusions": [
+    "**/build",
+    "**/shared",
+    "**/androidApp",
+    "**/desktopApp",
+    "**/webApp"
+  ],
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.server.launchMode": "Standard",
 
-  // ── 文件排除 ──
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/.gradle/**": true,
+    "**/.kotlin/**": true
+  },
   "files.exclude": {
-    "**/.gradle": true,
     "**/build": true,
-    "**/.idea": true,
-    "**/.kotlin": true
+    "**/.gradle": true,
+    "**/.kotlin": true,
+    "**/.idea": true
   },
   "search.exclude": {
-    "**/.gradle": true,
     "**/build": true,
-    "**/.idea": true,
+    "**/.gradle": true,
     "**/.kotlin": true
-  }
+  },
+
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
 }

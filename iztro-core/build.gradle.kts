@@ -13,7 +13,7 @@ version = "0.1.0-SNAPSHOT"
 
 kotlin {
     android {
-        namespace = "zhiqiu.iztro"
+        namespace = "zhiqiu.iztro.core"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {

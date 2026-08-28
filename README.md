@@ -200,21 +200,6 @@ fun MyApp() {
 }
 ```
 
-### 仅使用计算函数
-
-如果只需要排盘计算结果，不使用 UI 组件，可以直接引入 `iztro-core`：
-
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("io.github.zhiqiu:iztro-core:0.1.0-SNAPSHOT")
-}
-```
-
-## API 兼容性
-
-本项目的 API 设计与 [react-iztro](https://github.com/zhiqiu/iztro-kmp) 保持兼容，可作为 React 版本的 Compose Multiplatform 替代方案。
-
 ## 许可证
 
 MIT License
