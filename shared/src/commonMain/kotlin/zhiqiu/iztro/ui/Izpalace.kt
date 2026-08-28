@@ -71,7 +71,7 @@ fun Izpalace(
         PalaceHighlight.Focused -> IztroTheme.focusedPalaceBg
         PalaceHighlight.Opposite -> IztroTheme.oppositePalaceBg
         PalaceHighlight.Surrounded -> IztroTheme.surroundedPalaceBg
-        PalaceHighlight.None -> Color.White
+        PalaceHighlight.None -> IztroTheme.palaceBg
     }
 
     // 默认原盘：运限标签仅在对应开关打开后显示；小限/大运年龄在 footer 常驻
@@ -125,12 +125,11 @@ fun Izpalace(
             .clickable { onClickPalace(palace.index) }
             .padding(style.cellPad),
     ) {
-        // 上下分区：主星区吃剩余高度，footer 只占自身高度，互不遮挡
-        Column(Modifier.fillMaxSize()) {
+        // 主星区可滚动；footer（含大限年龄）align(Bottom) 钉在宫格最底。
+        Box(Modifier.fillMaxSize()) {
             Column(
                 Modifier
-                    .weight(1f, fill = true)
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
                 Row(
@@ -146,6 +145,18 @@ fun Izpalace(
                     }
                     Spacer(Modifier.weight(1f))
                 }
+
+                // 小限：紧贴主星下方（用户要求放在主星之下、靠上）
+                Text(
+                    text = palace.ages.take(if (style.compact) 5 else 7).joinToString(" "),
+                    fontSize = style.ageSp,
+                    color = IztroTheme.textMuted,
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = style.ageSp * 1.15f,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
 
                 if (showDecadal || showYearly) {
                     FlowRow(
@@ -187,48 +198,51 @@ fun Izpalace(
                 }
             }
 
-            // footer：自然高度，不叠在主星上
+            // footer 钉在宫格最底：左杂曜/小注、中（大限在上+宫名在下）、右干支，三者底对齐。
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(bg),
                 verticalAlignment = Alignment.Bottom,
             ) {
-                if (palace.adjectiveStars.isNotEmpty()) {
-                    val maxPerCol = 4
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        verticalAlignment = Alignment.Bottom,
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
-                        palace.adjectiveStars.chunked(maxPerCol).forEach { col ->
-                            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                                col.forEach { AdjStar(it) }
+                Column(Modifier.weight(1f)) {
+                    if (palace.adjectiveStars.isNotEmpty()) {
+                        val maxPerCol = if (style.compact) 5 else 4
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
+                            modifier = Modifier.padding(bottom = 2.dp),
+                        ) {
+                            palace.adjectiveStars.chunked(maxPerCol).forEach { col ->
+                                Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                                    col.forEach { AdjStar(it) }
+                                }
                             }
                         }
                     }
-                }
-
-                Spacer(Modifier.weight(1f))
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = palace.ages.take(if (style.compact) 5 else 7).joinToString(" "),
-                        fontSize = style.ageSp,
-                        color = IztroTheme.textMuted,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = style.ageSp * 1.15f,
-                    )
-                    Text(
-                        text = palace.decadalRangeText,
-                        fontSize = style.ageSp,
-                        color = IztroTheme.textMuted,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        lineHeight = style.ageSp * 1.15f,
-                    )
+                    // 博士/岁前/将前等横向小注：放左下，与杂曜同区（十二长生改到天干上方）
+                    if (style.showPalaceDecor) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
+                            modifier = Modifier.padding(bottom = 2.dp),
+                        ) {
+                            Text(palace.boshi12, fontSize = 11.sp, color = IztroTheme.decorator1, maxLines = 1, lineHeight = 12.sp)
+                            Text(
+                                text = if (showYearly) {
+                                    horoscope?.yearly?.suiqian12?.getOrNull(palace.index) ?: palace.suiqian12
+                                } else palace.suiqian12,
+                                fontSize = 11.sp, color = IztroTheme.decorator1, maxLines = 1, lineHeight = 12.sp,
+                            )
+                            Text(
+                                text = if (showYearly) {
+                                    horoscope?.yearly?.jiangqian12?.getOrNull(palace.index) ?: palace.jiangqian12
+                                } else palace.jiangqian12,
+                                fontSize = 11.sp, color = IztroTheme.decorator2, maxLines = 1, lineHeight = 12.sp,
+                            )
+                        }
+                    }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(3.dp),
                         modifier = Modifier.padding(top = 1.dp),
@@ -261,28 +275,20 @@ fun Izpalace(
                     }
                 }
 
+                // 中：大限年龄在上，宫名（父母/兄弟等）贴底
                 Column(
-                    horizontalAlignment = Alignment.End,
-                    modifier = Modifier.padding(start = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 2.dp),
                 ) {
-                    if (style.showPalaceDecor) {
-                        Text(
-                            palace.changsheng12,
-                            fontSize = 8.sp,
-                            color = IztroTheme.decorator1,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = 9.sp,
-                        )
-                        Text(
-                            palace.boshi12,
-                            fontSize = 8.sp,
-                            color = IztroTheme.decorator1,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = 9.sp,
-                        )
-                    }
+                    Text(
+                        text = palace.decadalRangeText,
+                        fontSize = style.ageSp,
+                        color = IztroTheme.textMuted,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = style.ageSp * 1.15f,
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = palace.name,
@@ -295,44 +301,32 @@ fun Izpalace(
                         if (palace.isBodyPalace) {
                             Text(
                                 text = "·身",
-                                fontSize = style.ageSp,
+                                fontSize = style.palaceNameSp,
+                                fontWeight = FontWeight.Bold,
                                 color = IztroTheme.starMajorRed,
                                 modifier = Modifier.padding(start = 1.dp),
+                                lineHeight = style.palaceNameSp * 1.15f,
                             )
                         }
                     }
                 }
 
+                // 右：十二长生固定在天干上方（不受 compact 隐藏 decor 影响），其下干支
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.End,
                     modifier = Modifier
-                        .padding(start = 2.dp)
+                        .padding(start = 4.dp)
                         .hoverable(stemInteraction)
                         .clickable { onToggleFlyStar(palace.heavenlyStem) },
                 ) {
-                    if (style.showPalaceDecor) {
-                        Text(
-                            text = if (showYearly) {
-                                horoscope?.yearly?.suiqian12?.getOrNull(palace.index) ?: palace.suiqian12
-                            } else palace.suiqian12,
-                            fontSize = 8.sp,
-                            color = IztroTheme.decorator1,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = 9.sp,
-                        )
-                        Text(
-                            text = if (showYearly) {
-                                horoscope?.yearly?.jiangqian12?.getOrNull(palace.index) ?: palace.jiangqian12
-                            } else palace.jiangqian12,
-                            fontSize = 8.sp,
-                            color = IztroTheme.decorator2,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = 9.sp,
-                        )
-                    }
-                    // 干支：选中宫位也不改背景/字色
+                    Text(
+                        text = palace.changsheng12,
+                        fontSize = 11.sp,
+                        color = IztroTheme.decorator1,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 12.sp,
+                    )
                     Text(
                         text = palace.heavenlyStem,
                         fontSize = style.stemBranchSp,
@@ -379,17 +373,17 @@ private fun HoroStar(star: DemoStar, color: Color) {
     }
     Text(
         text = star.name,
-        fontSize = 10.sp,
+        fontSize = 13.sp,
         fontWeight = FontWeight.SemiBold,
         color = nameColor,
         maxLines = 1,
-        lineHeight = 11.sp,
+        lineHeight = 14.sp,
     )
 }
 
 @Composable
 private fun DynamicPalaceName(name: String, color: Color) {
-    Text(name, fontSize = 9.sp, color = color, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    Text(name, fontSize = 12.sp, color = color, fontWeight = FontWeight.SemiBold, maxLines = 1)
 }
 
 @Composable
@@ -405,7 +399,7 @@ private fun FateScopeLabel(tag: FateTag, onClick: () -> Unit) {
             append(tag.name)
             tag.heavenlyStem?.let { append("·$it") }
         },
-        fontSize = 10.sp,
+        fontSize = 13.sp,
         color = if (tag.scope == "age") IztroTheme.textMuted else Color.White,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

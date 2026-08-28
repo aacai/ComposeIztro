@@ -44,6 +44,11 @@ data class IztrolabeProps(
     val horoscopeDate: String? = null,
     val horoscopeHour: Int? = null,
     val centerPalaceAlign: Boolean = false,
+    /**
+     * 日/夜间模式。为 null 时由组件内部状态管理；
+     * 非 null 为受控模式，配合 [onColorModeChange] 切换。
+     */
+    val colorMode: zhiqiu.iztro.ui.IztroColorMode? = null,
 ) {
     fun toInput(algorithm: Algorithm, resolvedAstroType: AstroType): IztroInput {
         val mergedConfig = (options ?: IztroConfig()).copy(algorithm = algorithm)

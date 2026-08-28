@@ -43,7 +43,10 @@ data class SolarDate(val year: Int, val month: Int, val day: Int) {
         return SolarDate(y, m, minOf(day, maxDay))
     }
 
-    fun plusYears(delta: Int): SolarDate = SolarDate(year + delta, month, day)
+    fun plusYears(delta: Int): SolarDate {
+        val y = year + delta
+        return SolarDate(y, month, minOf(day, daysInMonth(y, month)))
+    }
 
     fun isBefore(other: SolarDate): Boolean = when {
         year != other.year -> year < other.year

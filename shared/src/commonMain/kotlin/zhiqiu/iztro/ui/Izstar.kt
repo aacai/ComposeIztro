@@ -49,7 +49,8 @@ fun Izstar(
     horizontal: Boolean = false,
 ) {
     val style = LocalAstrolabeStyle.current
-    val starColor = remember(star.type, star.name) { starNameColor(star) }
+    val theme = IztroTheme
+    val starColor = remember(star.type, star.name, theme) { starNameColor(star, theme) }
 
     // 仅在点击宫位（或点宫干）激活后着色；默认原盘无自化底色
     val flyMutagenIndex = remember(activeHeavenlyStem, star.name) {
@@ -60,28 +61,27 @@ fun Izstar(
     }
 
     val flyActive = flyMutagenIndex != null
-    val chipBg = if (flyActive) IztroTheme.selfMutagenBgs[flyMutagenIndex] else Color.Transparent
+    val chipBg = if (flyActive) theme.selfMutagenBgs[flyMutagenIndex] else Color.Transparent
     val nameColor = if (flyActive) Color.White else starColor
+    val hoverBarColor = hoverMutagenIndex?.let { theme.selfMutagenBgs[it] }
     val barHeight = 3.dp
     val density = LocalDensity.current
-    val nameSize = when {
-        horizontal -> style.adjStarSp
-        star.type == "major" -> style.majorStarSp
-        else -> style.minorStarSp
-    }
+    // 竖排星曜（主星/辅星）名字统一字号；仅横向杂曜保持较小字号
+    val nameSize = if (horizontal) style.adjStarSp else style.majorStarSp
     val nameLineHeight = nameSize * 1.15f
     val brightSize = style.brightSp
     val brightLineHeight = brightSize * 1.2f
     val nameWeight = if (star.type == "major") FontWeight.Bold else FontWeight.SemiBold
+    val brightColor = theme.focus
 
     Row(
         modifier = modifier
             .height(IntrinsicSize.Min)
             .drawBehind {
-                if (hoverMutagenIndex != null && !flyActive) {
+                if (hoverBarColor != null && !flyActive) {
                     val h = with(density) { barHeight.toPx() }
                     drawRect(
-                        color = IztroTheme.selfMutagenBgs[hoverMutagenIndex],
+                        color = hoverBarColor,
                         topLeft = Offset(0f, size.height - h),
                         size = Size(size.width, h),
                     )
@@ -124,13 +124,13 @@ fun Izstar(
                 }
             }
 
-            // 亮度：跟在星名正下方，黑字；行高留足避免裁切
+            // 亮度：跟在星名正下方；行高留足避免裁切
             star.brightness?.takeIf { it.isNotEmpty() }?.let { b ->
                 if (horizontal) {
                     Text(
                         text = b,
                         fontSize = brightSize,
-                        color = Color.Black,
+                        color = brightColor,
                         lineHeight = brightLineHeight,
                         maxLines = 1,
                     )
@@ -139,7 +139,7 @@ fun Izstar(
                         Text(
                             text = ch.toString(),
                             fontSize = brightSize,
-                            color = Color.Black,
+                            color = brightColor,
                             lineHeight = brightLineHeight,
                             maxLines = 1,
                         )
@@ -150,13 +150,13 @@ fun Izstar(
             star.mutagen?.takeIf { it.isNotEmpty() }?.let { mutagen ->
                 Text(
                     text = mutagen,
-                    fontSize = 8.sp,
+                    fontSize = 11.sp,
                     color = Color.White,
-                    lineHeight = 10.sp,
+                    lineHeight = 13.sp,
                     modifier = Modifier
                         .padding(top = 1.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(IztroTheme.mutagenBadgeRed)
+                        .background(theme.mutagenBadgeRed)
                         .padding(horizontal = 2.dp, vertical = 0.dp),
                 )
             }
@@ -167,13 +167,13 @@ fun Izstar(
                     if (idx >= 0) {
                         Text(
                             text = MUTAGEN_LABELS[idx],
-                            fontSize = 7.sp,
+                            fontSize = 10.sp,
                             color = Color.White,
-                            lineHeight = 9.sp,
+                            lineHeight = 12.sp,
                             modifier = Modifier
                                 .padding(top = 1.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(IztroTheme.scopeColor(item.scope).copy(alpha = 0.75f))
+                                .background(theme.scopeColor(item.scope).copy(alpha = 0.75f))
                                 .padding(horizontal = 2.dp),
                         )
                     }
@@ -186,13 +186,13 @@ fun Izstar(
 private val MUTAGEN_LABELS = listOf("禄", "权", "科", "忌")
 
 /** 主星红；羊陀火铃空劫蓝；辅弼魁钺（含昌曲）紫；其余偏灰 */
-private fun starNameColor(star: DemoStar): Color = when (star.type) {
-    "major" -> IztroTheme.starMajorRed
-    "tough" -> IztroTheme.starToughBlue
-    "soft" -> IztroTheme.starSoftPurple
-    "lucun" -> IztroTheme.awesome
-    "tianma" -> IztroTheme.active
-    "flower" -> IztroTheme.happy
-    "helper" -> IztroTheme.nice
-    else -> IztroTheme.textMuted
+private fun starNameColor(star: DemoStar, theme: IztroColors): Color = when (star.type) {
+    "major" -> theme.starMajorRed
+    "tough" -> theme.starToughBlue
+    "soft" -> theme.starSoftPurple
+    "lucun" -> theme.awesome
+    "tianma" -> theme.active
+    "flower" -> theme.happy
+    "helper" -> theme.nice
+    else -> theme.textMuted
 }

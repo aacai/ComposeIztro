@@ -18,7 +18,7 @@ fun SurroundedLine(
     if (index < 0) return
 
     val strokeColor = scope?.let { IztroTheme.scopeColor(it).copy(alpha = 0.5f) }
-        ?: Color(0xFFF50000).copy(alpha = 0.5f)
+        ?: IztroTheme.awesome.copy(alpha = 0.5f)
 
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width / 2

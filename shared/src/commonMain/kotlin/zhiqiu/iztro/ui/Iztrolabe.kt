@@ -1,5 +1,6 @@
 package zhiqiu.iztro.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,9 @@ fun Iztrolabe(
     horoscopeDate: String? = null,
     horoscopeHour: Int? = null,
     centerPalaceAlign: Boolean = false,
+    /** null = 内部自管；非 null = 受控，配合 [onColorModeChange] */
+    colorMode: IztroColorMode? = null,
+    onColorModeChange: ((IztroColorMode) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Iztrolabe(
@@ -65,7 +69,9 @@ fun Iztrolabe(
             horoscopeDate = horoscopeDate,
             horoscopeHour = horoscopeHour,
             centerPalaceAlign = centerPalaceAlign,
+            colorMode = colorMode,
         ),
+        onColorModeChange = onColorModeChange,
         modifier = modifier,
     )
 }
@@ -73,6 +79,7 @@ fun Iztrolabe(
 @Composable
 fun Iztrolabe(
     props: IztrolabeProps,
+    onColorModeChange: ((IztroColorMode) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var algorithm by remember { mutableStateOf(props.options?.algorithm ?: "default") }
@@ -80,6 +87,9 @@ fun Iztrolabe(
     // 中宫日±/时±：排盘出生日期与时辰（一变就整盘重算）
     var birthday by remember { mutableStateOf(props.birthday) }
     var birthTime by remember { mutableIntStateOf(props.birthTime) }
+    // 色模式：props.colorMode 非 null 为受控，否则内部状态
+    var internalColorMode by remember { mutableStateOf(IztroColorMode.Light) }
+    val resolvedColorMode = props.colorMode ?: internalColorMode
 
     LaunchedEffect(props.options?.algorithm) {
         algorithm = props.options?.algorithm ?: "default"
@@ -89,22 +99,34 @@ fun Iztrolabe(
     }
     LaunchedEffect(props.birthday) { birthday = props.birthday }
     LaunchedEffect(props.birthTime) { birthTime = props.birthTime }
+    LaunchedEffect(props.colorMode) {
+        props.colorMode?.let { internalColorMode = it }
+    }
 
-    // birthday/birthTime 必须进 key，否则 rememberIztro / 宫位状态可能残留
-    key(birthday, birthTime, algorithm, localAstroType) {
-        val input = props.copy(birthday = birthday, birthTime = birthTime)
-            .toInput(algorithm, localAstroType)
-        IztrolabeContent(
-            input = input,
-            props = props,
-            algorithm = algorithm,
-            astroType = localAstroType,
-            onAlgorithmChange = { algorithm = it },
-            onAstroTypeChange = { localAstroType = it },
-            onBirthdayChange = { birthday = it },
-            onBirthTimeChange = { birthTime = it },
-            modifier = modifier,
-        )
+    fun setColorMode(mode: IztroColorMode) {
+        if (props.colorMode == null) internalColorMode = mode
+        onColorModeChange?.invoke(mode)
+    }
+
+    IztroThemeProvider(mode = resolvedColorMode) {
+        // birthday/birthTime 必须进 key，否则 rememberIztro / 宫位状态可能残留
+        key(birthday, birthTime, algorithm, localAstroType) {
+            val input = props.copy(birthday = birthday, birthTime = birthTime)
+                .toInput(algorithm, localAstroType)
+            IztrolabeContent(
+                input = input,
+                props = props,
+                algorithm = algorithm,
+                astroType = localAstroType,
+                onAlgorithmChange = { algorithm = it },
+                onAstroTypeChange = { localAstroType = it },
+                onBirthdayChange = { birthday = it },
+                onBirthTimeChange = { birthTime = it },
+                colorMode = resolvedColorMode,
+                onToggleColorMode = { setColorMode(resolvedColorMode.toggle()) },
+                modifier = modifier,
+            )
+        }
     }
 }
 
@@ -138,6 +160,8 @@ private fun IztrolabeContent(
     onAstroTypeChange: (AstroType) -> Unit,
     onBirthdayChange: (String) -> Unit,
     onBirthTimeChange: (Int) -> Unit,
+    colorMode: IztroColorMode,
+    onToggleColorMode: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val iztro = rememberIztro(input, props.horoscopeDate, props.horoscopeHour)
@@ -157,6 +181,8 @@ private fun IztrolabeContent(
         astroType = astroType,
         onAlgorithmChange = onAlgorithmChange,
         onAstroTypeChange = onAstroTypeChange,
+        colorMode = colorMode,
+        onToggleColorMode = onToggleColorMode,
         modifier = modifier,
     )
 }
@@ -172,25 +198,30 @@ private fun IztrolabeContentWithChart(
 ) {
     var horoscopeDate by remember(chart, initialHoroscopeDate) { mutableStateOf(initialHoroscopeDate) }
     var horoscopeHour by remember(chart, initialHoroscopeHour) { mutableIntStateOf(initialHoroscopeHour) }
+    var colorMode by remember { mutableStateOf(IztroColorMode.Light) }
     val horoscope = remember(chart, horoscopeDate, horoscopeHour) {
         computeHoroscope(chart, horoscopeDate, horoscopeHour)
     }
 
-    AstrolabeGrid(
-        chart = chart,
-        horoscope = horoscope,
-        horoscopeDate = horoscopeDate,
-        horoscopeHour = horoscopeHour,
-        onSetHoroscopeDate = { horoscopeDate = it },
-        onSetHoroscopeHour = { horoscopeHour = it },
-        lang = lang,
-        centerPalaceAlign = centerPalaceAlign,
-        algorithm = "default",
-        astroType = "heaven",
-        onAlgorithmChange = {},
-        onAstroTypeChange = {},
-        modifier = modifier,
-    )
+    IztroThemeProvider(mode = colorMode) {
+        AstrolabeGrid(
+            chart = chart,
+            horoscope = horoscope,
+            horoscopeDate = horoscopeDate,
+            horoscopeHour = horoscopeHour,
+            onSetHoroscopeDate = { horoscopeDate = it },
+            onSetHoroscopeHour = { horoscopeHour = it },
+            lang = lang,
+            centerPalaceAlign = centerPalaceAlign,
+            algorithm = "default",
+            astroType = "heaven",
+            onAlgorithmChange = {},
+            onAstroTypeChange = {},
+            colorMode = colorMode,
+            onToggleColorMode = { colorMode = colorMode.toggle() },
+            modifier = modifier,
+        )
+    }
 }
 
 @Composable
@@ -209,6 +240,8 @@ private fun AstrolabeGrid(
     astroType: AstroType,
     onAlgorithmChange: (Algorithm) -> Unit,
     onAstroTypeChange: (AstroType) -> Unit,
+    colorMode: IztroColorMode = IztroColorMode.Light,
+    onToggleColorMode: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var activeHeavenlyStem by remember(chart) { mutableStateOf<String?>(null) }
@@ -270,7 +303,11 @@ private fun AstrolabeGrid(
         hoveredIndex = index
     }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .background(IztroTheme.boardBg),
+    ) {
         // 正方形盘：边长 = min(宽, 高)，竖屏手机按宽度定边并垂直居中
         val boardSide = if (maxWidth < maxHeight) maxWidth else maxHeight
         val style = rememberAstrolabeStyle(boardSide)
@@ -334,6 +371,8 @@ private fun AstrolabeGrid(
                             showDaily = showDaily,
                             showHourly = showHourly,
                             onToggleScope = ::toggleScope,
+                            colorMode = colorMode,
+                            onToggleColorMode = onToggleColorMode,
                             modifier = Modifier.weight(2f).fillMaxHeight().padding(style.cellGap),
                         )
                         Column(Modifier.weight(1f).fillMaxHeight()) {

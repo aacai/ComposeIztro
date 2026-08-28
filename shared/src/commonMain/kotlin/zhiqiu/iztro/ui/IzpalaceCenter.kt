@@ -71,6 +71,8 @@ fun IzpalaceCenter(
     showDaily: Boolean = false,
     showHourly: Boolean = false,
     onToggleScope: (String) -> Unit = {},
+    colorMode: IztroColorMode = IztroColorMode.Light,
+    onToggleColorMode: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val style = LocalAstrolabeStyle.current
@@ -79,16 +81,22 @@ fun IzpalaceCenter(
     val lunarLine = buildLunarLine(chart)
     val jieqiPillars = chart.jieqiPillars.ifEmpty { chart.pillars }
 
-    // 日±/时±改的是排盘出生日期与时辰
+    // 年±/日±/时±改的是排盘出生年、日与时辰
     val birthDate = SolarDate.parse(chart.solarDate)
     val minDate = SolarDate(1900, 1, 1)
     val maxDate = SolarDate(2100, 12, 31)
+    val canYearMinus = birthDate.year > minDate.year
+    val canYearPlus = birthDate.year < maxDate.year
     val canDayMinus = birthDate.isAfter(minDate)
     val canDayPlus = birthDate.isBefore(maxDate)
     val canHourMinus = chart.timeIndex > 0
     val canHourPlus = chart.timeIndex < 11
     val gap = if (style.compact) 2.dp else 4.dp
     val pad = if (style.compact) 4.dp else 6.dp
+    val nominalAge = horoscope?.age?.nominalAge
+    val decadalPalaceName = horoscope?.decadal?.let { d ->
+        chart.palaces.getOrNull(d.index)?.name
+    }
 
     Box(
         modifier = modifier
@@ -142,6 +150,14 @@ fun IzpalaceCenter(
                     color = IztroTheme.awesome,
                     lineHeight = style.centerBodySp * 1.15f,
                 )
+                // 顶栏切换黑夜/白天，一眼能点到
+                StepBtn(
+                    label = if (colorMode == IztroColorMode.Dark) "白天" else "黑夜",
+                    enabled = true,
+                    onClick = onToggleColorMode,
+                    fontSize = style.centerBtnSp,
+                    compact = style.compact,
+                )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(gap)) {
@@ -152,6 +168,18 @@ fun IzpalaceCenter(
                     "${chart.soul} 身主：${chart.body} 子斗：${chart.earthlyBranchOfSoulPalace}",
                     style.centerBodySp,
                 )
+                // 虚岁按运限日相对出生推算，便于对照各宫大限年龄段
+                if (nominalAge != null) {
+                    val ageValue = buildString {
+                        append(nominalAge)
+                        append(" 岁")
+                        if (!decadalPalaceName.isNullOrEmpty()) {
+                            append("　大限·")
+                            append(decadalPalaceName)
+                        }
+                    }
+                    CenterLine("虚岁", ageValue, style.centerBodySp)
+                }
                 if (!style.compact) {
                     CenterLine("星座", chart.sign, style.centerBodySp)
                 }
@@ -182,10 +210,18 @@ fun IzpalaceCenter(
             HoroscopeStepBar(
                 dateText = chart.solarDate,
                 hour = chart.timeIndex,
+                canYearMinus = canYearMinus,
+                canYearPlus = canYearPlus,
                 canDayMinus = canDayMinus,
                 canDayPlus = canDayPlus,
                 canHourMinus = canHourMinus,
                 canHourPlus = canHourPlus,
+                onYearMinus = {
+                    if (canYearMinus) onBirthdayChange(birthDate.plusYears(-1).toIso())
+                },
+                onYearPlus = {
+                    if (canYearPlus) onBirthdayChange(birthDate.plusYears(1).toIso())
+                },
                 onDayMinus = {
                     if (canDayMinus) onBirthdayChange(birthDate.plusDays(-1).toIso())
                 },
@@ -224,7 +260,7 @@ fun IzpalaceCenter(
         Text(
             text = chart.copyright.ifEmpty { "Powered by iztro" },
             fontSize = 7.sp,
-            color = Color.Black.copy(alpha = 0.2f),
+            color = IztroTheme.focus.copy(alpha = 0.2f),
             modifier = Modifier.align(Alignment.BottomEnd).padding(1.dp),
         )
     }
@@ -236,14 +272,14 @@ private fun SelfMutagenLegend() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text("点击宫位自化：", fontSize = 10.sp, color = IztroTheme.textMuted, lineHeight = 12.sp)
-        LegendItem("禄", IztroTheme.selfLu)
-        Text("→", fontSize = 10.sp, color = IztroTheme.textMuted, lineHeight = 12.sp)
-        LegendItem("权", IztroTheme.selfQuan)
-        Text("→", fontSize = 10.sp, color = IztroTheme.textMuted, lineHeight = 12.sp)
-        LegendItem("科", IztroTheme.selfKe)
-        Text("→", fontSize = 10.sp, color = IztroTheme.textMuted, lineHeight = 12.sp)
-        LegendItem("忌", IztroTheme.selfJi)
+        Text("点击宫位自化：", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
+        LegendItem("禄", IztroTheme.selfLu, 14.sp)
+        Text("→", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
+        LegendItem("权", IztroTheme.selfQuan, 14.sp)
+        Text("→", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
+        LegendItem("科", IztroTheme.selfKe, 14.sp)
+        Text("→", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
+        LegendItem("忌", IztroTheme.selfJi, 14.sp)
     }
 }
 
@@ -253,14 +289,14 @@ private fun SelfMutagenLegendCompact() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text("自化", fontSize = 8.sp, color = IztroTheme.textMuted, lineHeight = 10.sp)
-        LegendItem("禄", IztroTheme.selfLu, 9.sp)
-        Text("→", fontSize = 8.sp, color = IztroTheme.textMuted)
-        LegendItem("权", IztroTheme.selfQuan, 9.sp)
-        Text("→", fontSize = 8.sp, color = IztroTheme.textMuted)
-        LegendItem("科", IztroTheme.selfKe, 9.sp)
-        Text("→", fontSize = 8.sp, color = IztroTheme.textMuted)
-        LegendItem("忌", IztroTheme.selfJi, 9.sp)
+        Text("自化", fontSize = 11.sp, color = IztroTheme.textMuted, lineHeight = 13.sp)
+        LegendItem("禄", IztroTheme.selfLu, 12.sp)
+        Text("→", fontSize = 11.sp, color = IztroTheme.textMuted)
+        LegendItem("权", IztroTheme.selfQuan, 12.sp)
+        Text("→", fontSize = 11.sp, color = IztroTheme.textMuted)
+        LegendItem("科", IztroTheme.selfKe, 12.sp)
+        Text("→", fontSize = 11.sp, color = IztroTheme.textMuted)
+        LegendItem("忌", IztroTheme.selfJi, 12.sp)
     }
 }
 
@@ -268,7 +304,7 @@ private fun SelfMutagenLegendCompact() {
 private fun LegendItem(
     label: String,
     color: Color,
-    size: androidx.compose.ui.unit.TextUnit = 11.sp,
+    size: androidx.compose.ui.unit.TextUnit = 14.sp,
 ) {
     Text(
         text = label,
@@ -283,10 +319,14 @@ private fun LegendItem(
 private fun HoroscopeStepBar(
     dateText: String,
     hour: Int,
+    canYearMinus: Boolean,
+    canYearPlus: Boolean,
     canDayMinus: Boolean,
     canDayPlus: Boolean,
     canHourMinus: Boolean,
     canHourPlus: Boolean,
+    onYearMinus: () -> Unit,
+    onYearPlus: () -> Unit,
     onDayMinus: () -> Unit,
     onDayPlus: () -> Unit,
     onHourMinus: () -> Unit,
@@ -298,8 +338,8 @@ private fun HoroscopeStepBar(
     showHourly: Boolean,
     onToggleScope: (String) -> Unit,
     compact: Boolean = false,
-    btnSp: androidx.compose.ui.unit.TextUnit = 11.sp,
-    bodySp: androidx.compose.ui.unit.TextUnit = 10.sp,
+    btnSp: androidx.compose.ui.unit.TextUnit = 14.sp,
+    bodySp: androidx.compose.ui.unit.TextUnit = 13.sp,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)) {
         Text(
@@ -317,6 +357,8 @@ private fun HoroscopeStepBar(
             StepBtn("日+", enabled = canDayPlus, onClick = onDayPlus, fontSize = btnSp, compact = compact)
             StepBtn("时-", enabled = canHourMinus, onClick = onHourMinus, fontSize = btnSp, compact = compact)
             StepBtn("时+", enabled = canHourPlus, onClick = onHourPlus, fontSize = btnSp, compact = compact)
+            StepBtn("年-", enabled = canYearMinus, onClick = onYearMinus, fontSize = btnSp, compact = compact)
+            StepBtn("年+", enabled = canYearPlus, onClick = onYearPlus, fontSize = btnSp, compact = compact)
         }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 4.dp),
@@ -341,14 +383,14 @@ private fun ScopeToggle(label: String, active: Boolean, compact: Boolean = false
             "流日" -> "daily"
             else -> "hourly"
         },
-    ) else Color(0xFFF0F0F0)
-    val fg = if (active) Color.White else Color(0xFF9E9E9E)
+    ) else IztroTheme.chipInactiveBg
+    val fg = if (active) Color.White else IztroTheme.chipInactiveFg
     Text(
         text = label,
-        fontSize = if (compact) 9.sp else 10.sp,
+        fontSize = if (compact) 12.sp else 13.sp,
         fontWeight = FontWeight.SemiBold,
         color = fg,
-        lineHeight = if (compact) 11.sp else 12.sp,
+        lineHeight = if (compact) 14.sp else 15.sp,
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))
             .background(bg)
@@ -362,11 +404,11 @@ private fun StepBtn(
     label: String,
     enabled: Boolean,
     onClick: () -> Unit,
-    fontSize: androidx.compose.ui.unit.TextUnit = 11.sp,
+    fontSize: androidx.compose.ui.unit.TextUnit = 14.sp,
     compact: Boolean = false,
 ) {
-    val bg = if (enabled) Color(0xFFE8EAF6) else Color(0xFFF0F0F0)
-    val fg = if (enabled) IztroTheme.quan else Color(0xFFBDBDBD)
+    val bg = if (enabled) IztroTheme.stepBtnBg else IztroTheme.stepBtnDisabledBg
+    val fg = if (enabled) IztroTheme.quan else IztroTheme.stepBtnDisabledFg
     Text(
         text = label,
         fontSize = fontSize,
@@ -385,7 +427,7 @@ private fun StepBtn(
 private fun CenterLine(
     label: String,
     value: String,
-    fontSize: androidx.compose.ui.unit.TextUnit = 10.sp,
+    fontSize: androidx.compose.ui.unit.TextUnit = 13.sp,
 ) {
     Text(
         text = "$label：$value",
@@ -398,7 +440,8 @@ private fun CenterLine(
 
 @Composable
 private fun FourPillarsRow(pillars: List<DemoFourPillar>, compact: Boolean = false) {
-    val stemSp = if (compact) 11.sp else 13.sp
+    val theme = IztroTheme
+    val stemSp = if (compact) 14.sp else 16.sp
     Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp)) {
         pillars.forEach { pillar ->
             Column(
@@ -409,14 +452,14 @@ private fun FourPillarsRow(pillars: List<DemoFourPillar>, compact: Boolean = fal
                     pillar.stem,
                     fontSize = stemSp,
                     fontWeight = FontWeight.Bold,
-                    color = wuxingColor(stemElement(pillar.stem)),
+                    color = wuxingColor(stemElement(pillar.stem), theme),
                     lineHeight = stemSp * 1.1f,
                 )
                 Text(
                     pillar.branch,
                     fontSize = stemSp,
                     fontWeight = FontWeight.Bold,
-                    color = wuxingColor(branchElement(pillar.branch)),
+                    color = wuxingColor(branchElement(pillar.branch), theme),
                     lineHeight = stemSp * 1.1f,
                 )
             }
@@ -434,13 +477,13 @@ private fun branchElement(branch: String): String {
     return earthlyBranches[key]?.fiveElements ?: ""
 }
 
-private fun wuxingColor(element: String): Color = when (element) {
-    "木" -> Color(0xFF2E7D32)
-    "火" -> Color(0xFFC62828)
-    "土" -> Color(0xFF8D6E63)
-    "金" -> Color(0xFFB8860B)
-    "水" -> Color(0xFF1565C0)
-    else -> IztroTheme.focus
+private fun wuxingColor(element: String, theme: IztroColors): Color = when (element) {
+    "木" -> if (theme.isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
+    "火" -> if (theme.isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
+    "土" -> if (theme.isDark) Color(0xFFBCAAA4) else Color(0xFF8D6E63)
+    "金" -> if (theme.isDark) Color(0xFFFFD54F) else Color(0xFFB8860B)
+    "水" -> if (theme.isDark) Color(0xFF90CAF9) else Color(0xFF1565C0)
+    else -> theme.focus
 }
 
 private fun buildLunarLine(chart: DemoChart): String {
@@ -488,11 +531,11 @@ private fun AlgorithmSelector(
                     "zhongzhou" -> ReactUiStrings.t(lang, "algorithmZhongzhou")
                     else -> ReactUiStrings.t(lang, "algorithmDefault")
                 } + " ▾",
-                fontSize = 9.sp,
+                fontSize = 12.sp,
                 color = IztroTheme.quan,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE8EAF6))
+                    .background(IztroTheme.stepBtnBg)
                     .clickable { expanded = true }
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
@@ -501,11 +544,11 @@ private fun AlgorithmSelector(
                 onDismissRequest = { expanded = false },
             ) {
                 DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "algorithmDefault"), fontSize = 11.sp) },
+                    text = { Text(ReactUiStrings.t(lang, "algorithmDefault"), fontSize = 14.sp) },
                     onClick = { onChange("default"); expanded = false },
                 )
                 DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "algorithmZhongzhou"), fontSize = 11.sp) },
+                    text = { Text(ReactUiStrings.t(lang, "algorithmZhongzhou"), fontSize = 14.sp) },
                     onClick = { onChange("zhongzhou"); expanded = false },
                 )
             }
@@ -520,18 +563,18 @@ private fun AlgorithmSelector(
             },
             onValueChange = {},
             readOnly = true,
-            label = { Text(ReactUiStrings.t(lang, "labelAlgorithm"), fontSize = 9.sp) },
+            label = { Text(ReactUiStrings.t(lang, "labelAlgorithm"), fontSize = 12.sp) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor().padding(end = 4.dp),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "algorithmDefault"), fontSize = 11.sp) },
+                text = { Text(ReactUiStrings.t(lang, "algorithmDefault"), fontSize = 14.sp) },
                 onClick = { onChange("default"); expanded = false },
             )
             DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "algorithmZhongzhou"), fontSize = 11.sp) },
+                text = { Text(ReactUiStrings.t(lang, "algorithmZhongzhou"), fontSize = 14.sp) },
                 onClick = { onChange("zhongzhou"); expanded = false },
             )
         }
@@ -555,11 +598,11 @@ private fun AstroTypeSelector(
                     "human" -> ReactUiStrings.t(lang, "astroTypeHuman")
                     else -> ReactUiStrings.t(lang, "astroTypeHeaven")
                 } + " ▾",
-                fontSize = 9.sp,
+                fontSize = 12.sp,
                 color = IztroTheme.quan,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE8EAF6))
+                    .background(IztroTheme.stepBtnBg)
                     .clickable { expanded = true }
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
@@ -568,15 +611,15 @@ private fun AstroTypeSelector(
                 onDismissRequest = { expanded = false },
             ) {
                 DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "astroTypeHeaven"), fontSize = 11.sp) },
+                    text = { Text(ReactUiStrings.t(lang, "astroTypeHeaven"), fontSize = 14.sp) },
                     onClick = { onChange("heaven"); expanded = false },
                 )
                 DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "astroTypeEarth"), fontSize = 11.sp) },
+                    text = { Text(ReactUiStrings.t(lang, "astroTypeEarth"), fontSize = 14.sp) },
                     onClick = { onChange("earth"); expanded = false },
                 )
                 DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "astroTypeHuman"), fontSize = 11.sp) },
+                    text = { Text(ReactUiStrings.t(lang, "astroTypeHuman"), fontSize = 14.sp) },
                     onClick = { onChange("human"); expanded = false },
                 )
             }
@@ -592,22 +635,22 @@ private fun AstroTypeSelector(
             },
             onValueChange = {},
             readOnly = true,
-            label = { Text(ReactUiStrings.t(lang, "labelAstroType"), fontSize = 9.sp) },
+            label = { Text(ReactUiStrings.t(lang, "labelAstroType"), fontSize = 12.sp) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor(),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "astroTypeHeaven"), fontSize = 11.sp) },
+                text = { Text(ReactUiStrings.t(lang, "astroTypeHeaven"), fontSize = 14.sp) },
                 onClick = { onChange("heaven"); expanded = false },
             )
             DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "astroTypeEarth"), fontSize = 11.sp) },
+                text = { Text(ReactUiStrings.t(lang, "astroTypeEarth"), fontSize = 14.sp) },
                 onClick = { onChange("earth"); expanded = false },
             )
             DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "astroTypeHuman"), fontSize = 11.sp) },
+                text = { Text(ReactUiStrings.t(lang, "astroTypeHuman"), fontSize = 14.sp) },
                 onClick = { onChange("human"); expanded = false },
             )
         }
