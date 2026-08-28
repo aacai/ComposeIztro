@@ -1,12 +1,16 @@
 package zhiqiu.iztro.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -14,6 +18,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import zhiqiu.iztro.Algorithm
@@ -265,92 +270,104 @@ private fun AstrolabeGrid(
         hoveredIndex = index
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Row(Modifier.weight(1f).fillMaxWidth()) {
-            listOf(3, 4, 5, 6).forEach { idx ->
-                PalaceSlot(
-                    chart, horoscope, chart.palaces[idx], idx, previewIndex,
-                    activeHeavenlyStem, hoverHeavenlyStem,
-                    showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                    onFocus = ::onPalaceFocus,
-                    onClickPalace = ::onPalaceClick,
-                    onToggleScope = ::toggleScope,
-                    onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                    onHoverStem = { hoverHeavenlyStem = it },
-                    modifier = Modifier.weight(1f).fillMaxHeight().padding(1.5.dp),
-                )
-            }
-        }
-        Row(Modifier.weight(2f).fillMaxWidth()) {
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                listOf(2, 1).forEach { idx ->
-                    PalaceSlot(
-                        chart, horoscope, chart.palaces[idx], idx, previewIndex,
-                        activeHeavenlyStem, hoverHeavenlyStem,
-                        showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                        onFocus = ::onPalaceFocus,
-                        onClickPalace = ::onPalaceClick,
-                        onToggleScope = ::toggleScope,
-                        onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                        onHoverStem = { hoverHeavenlyStem = it },
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(1.5.dp),
-                    )
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // 正方形盘：边长 = min(宽, 高)，竖屏手机按宽度定边并垂直居中
+        val boardSide = if (maxWidth < maxHeight) maxWidth else maxHeight
+        val style = rememberAstrolabeStyle(boardSide)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CompositionLocalProvider(LocalAstrolabeStyle provides style) {
+                Column(Modifier.size(boardSide)) {
+                    Row(Modifier.weight(style.rowWeightOuter).fillMaxWidth()) {
+                        listOf(3, 4, 5, 6).forEach { idx ->
+                            PalaceSlot(
+                                chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                activeHeavenlyStem, hoverHeavenlyStem,
+                                showDecadal, showYearly, showMonthly, showDaily, showHourly,
+                                onFocus = ::onPalaceFocus,
+                                onClickPalace = ::onPalaceClick,
+                                onToggleScope = ::toggleScope,
+                                onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
+                                onHoverStem = { hoverHeavenlyStem = it },
+                                modifier = Modifier.weight(1f).fillMaxHeight().padding(style.cellGap),
+                            )
+                        }
+                    }
+                    Row(Modifier.weight(style.rowWeightMid).fillMaxWidth()) {
+                        Column(Modifier.weight(1f).fillMaxHeight()) {
+                            listOf(2, 1).forEach { idx ->
+                                PalaceSlot(
+                                    chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                    activeHeavenlyStem, hoverHeavenlyStem,
+                                    showDecadal, showYearly, showMonthly, showDaily, showHourly,
+                                    onFocus = ::onPalaceFocus,
+                                    onClickPalace = ::onPalaceClick,
+                                    onToggleScope = ::toggleScope,
+                                    onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
+                                    onHoverStem = { hoverHeavenlyStem = it },
+                                    modifier = Modifier.weight(1f).fillMaxWidth().padding(style.cellGap),
+                                )
+                            }
+                        }
+                        IzpalaceCenter(
+                            chart = chart,
+                            horoscope = horoscope,
+                            horoscopeDate = horoscopeDate,
+                            horoscopeHour = horoscopeHour,
+                            arrowIndex = arrow.first,
+                            arrowScope = arrow.second,
+                            onSetHoroscopeDate = onSetHoroscopeDate,
+                            onSetHoroscopeHour = onSetHoroscopeHour,
+                            onBirthdayChange = onBirthdayChange,
+                            onBirthTimeChange = onBirthTimeChange,
+                            lang = lang,
+                            centerPalaceAlign = centerPalaceAlign,
+                            algorithm = algorithm,
+                            astroType = astroType,
+                            onAlgorithmChange = onAlgorithmChange,
+                            onAstroTypeChange = onAstroTypeChange,
+                            showDecadal = showDecadal,
+                            showYearly = showYearly,
+                            showMonthly = showMonthly,
+                            showDaily = showDaily,
+                            showHourly = showHourly,
+                            onToggleScope = ::toggleScope,
+                            modifier = Modifier.weight(2f).fillMaxHeight().padding(style.cellGap),
+                        )
+                        Column(Modifier.weight(1f).fillMaxHeight()) {
+                            listOf(7, 8).forEach { idx ->
+                                PalaceSlot(
+                                    chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                    activeHeavenlyStem, hoverHeavenlyStem,
+                                    showDecadal, showYearly, showMonthly, showDaily, showHourly,
+                                    onFocus = ::onPalaceFocus,
+                                    onClickPalace = ::onPalaceClick,
+                                    onToggleScope = ::toggleScope,
+                                    onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
+                                    onHoverStem = { hoverHeavenlyStem = it },
+                                    modifier = Modifier.weight(1f).fillMaxWidth().padding(style.cellGap),
+                                )
+                            }
+                        }
+                    }
+                    Row(Modifier.weight(style.rowWeightOuter).fillMaxWidth()) {
+                        listOf(0, 11, 10, 9).forEach { idx ->
+                            PalaceSlot(
+                                chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                activeHeavenlyStem, hoverHeavenlyStem,
+                                showDecadal, showYearly, showMonthly, showDaily, showHourly,
+                                onFocus = ::onPalaceFocus,
+                                onClickPalace = ::onPalaceClick,
+                                onToggleScope = ::toggleScope,
+                                onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
+                                onHoverStem = { hoverHeavenlyStem = it },
+                                modifier = Modifier.weight(1f).fillMaxHeight().padding(style.cellGap),
+                            )
+                        }
+                    }
                 }
-            }
-            IzpalaceCenter(
-                chart = chart,
-                horoscope = horoscope,
-                horoscopeDate = horoscopeDate,
-                horoscopeHour = horoscopeHour,
-                arrowIndex = arrow.first,
-                arrowScope = arrow.second,
-                onSetHoroscopeDate = onSetHoroscopeDate,
-                onSetHoroscopeHour = onSetHoroscopeHour,
-                onBirthdayChange = onBirthdayChange,
-                onBirthTimeChange = onBirthTimeChange,
-                lang = lang,
-                centerPalaceAlign = centerPalaceAlign,
-                algorithm = algorithm,
-                astroType = astroType,
-                onAlgorithmChange = onAlgorithmChange,
-                onAstroTypeChange = onAstroTypeChange,
-                showDecadal = showDecadal,
-                showYearly = showYearly,
-                showMonthly = showMonthly,
-                showDaily = showDaily,
-                showHourly = showHourly,
-                onToggleScope = ::toggleScope,
-                modifier = Modifier.weight(2f).fillMaxHeight().padding(1.5.dp),
-            )
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                listOf(7, 8).forEach { idx ->
-                    PalaceSlot(
-                        chart, horoscope, chart.palaces[idx], idx, previewIndex,
-                        activeHeavenlyStem, hoverHeavenlyStem,
-                        showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                        onFocus = ::onPalaceFocus,
-                        onClickPalace = ::onPalaceClick,
-                        onToggleScope = ::toggleScope,
-                        onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                        onHoverStem = { hoverHeavenlyStem = it },
-                        modifier = Modifier.weight(1f).fillMaxWidth().padding(1.5.dp),
-                    )
-                }
-            }
-        }
-        Row(Modifier.weight(1f).fillMaxWidth()) {
-            listOf(0, 11, 10, 9).forEach { idx ->
-                PalaceSlot(
-                    chart, horoscope, chart.palaces[idx], idx, previewIndex,
-                    activeHeavenlyStem, hoverHeavenlyStem,
-                    showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                    onFocus = ::onPalaceFocus,
-                    onClickPalace = ::onPalaceClick,
-                    onToggleScope = ::toggleScope,
-                    onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                    onHoverStem = { hoverHeavenlyStem = it },
-                    modifier = Modifier.weight(1f).fillMaxHeight().padding(1.5.dp),
-                )
             }
         }
     }

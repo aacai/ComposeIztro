@@ -48,6 +48,7 @@ fun Izstar(
     /** 杂曜等低级星：横向一字排开，不竖排 */
     horizontal: Boolean = false,
 ) {
+    val style = LocalAstrolabeStyle.current
     val starColor = remember(star.type, star.name) { starNameColor(star) }
 
     // 仅在点击宫位（或点宫干）激活后着色；默认原盘无自化底色
@@ -64,18 +65,13 @@ fun Izstar(
     val barHeight = 3.dp
     val density = LocalDensity.current
     val nameSize = when {
-        horizontal -> 9.sp
-        star.type == "major" -> 12.sp
-        else -> 11.sp
+        horizontal -> style.adjStarSp
+        star.type == "major" -> style.majorStarSp
+        else -> style.minorStarSp
     }
-    // 行高必须大于字号，否则中文会被裁切，亮度会「看起来没显示」
-    val nameLineHeight = when {
-        horizontal -> 11.sp
-        star.type == "major" -> 14.sp
-        else -> 13.sp
-    }
-    val brightSize = 9.sp
-    val brightLineHeight = 11.sp
+    val nameLineHeight = nameSize * 1.15f
+    val brightSize = style.brightSp
+    val brightLineHeight = brightSize * 1.2f
     val nameWeight = if (star.type == "major") FontWeight.Bold else FontWeight.SemiBold
 
     Row(

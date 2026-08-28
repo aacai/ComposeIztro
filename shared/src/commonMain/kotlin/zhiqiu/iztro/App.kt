@@ -2,8 +2,11 @@ package zhiqiu.iztro
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,7 +23,8 @@ fun App() {
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.surface)
                 .fillMaxSize()
-                .padding(8.dp),
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 4.dp, vertical = 2.dp),
         ) {
             Iztrolabe(
                 birthday = "2000-8-16",

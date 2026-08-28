@@ -65,6 +65,7 @@ fun Izpalace(
     onHoverStem: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val style = LocalAstrolabeStyle.current
     val highlight = palaceHighlight(focusedIndex, palace.index)
     val bg = when (highlight) {
         PalaceHighlight.Focused -> IztroTheme.focusedPalaceBg
@@ -122,7 +123,7 @@ fun Izpalace(
             .background(bg)
             .hoverable(palaceInteraction)
             .clickable { onClickPalace(palace.index) }
-            .padding(3.dp),
+            .padding(style.cellPad),
     ) {
         // 上下分区：主星区吃剩余高度，footer 只占自身高度，互不遮挡
         Column(Modifier.fillMaxSize()) {
@@ -208,23 +209,25 @@ fun Izpalace(
 
                 Spacer(Modifier.weight(1f))
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Text(
-                        text = palace.ages.take(7).joinToString(" "),
-                        fontSize = 9.sp,
+                        text = palace.ages.take(if (style.compact) 5 else 7).joinToString(" "),
+                        fontSize = style.ageSp,
                         color = IztroTheme.textMuted,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 10.sp,
+                        lineHeight = style.ageSp * 1.15f,
                     )
                     Text(
                         text = palace.decadalRangeText,
-                        fontSize = 9.sp,
+                        fontSize = style.ageSp,
                         color = IztroTheme.textMuted,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
-                        lineHeight = 10.sp,
+                        lineHeight = style.ageSp * 1.15f,
                     )
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -262,35 +265,37 @@ fun Izpalace(
                     horizontalAlignment = Alignment.End,
                     modifier = Modifier.padding(start = 4.dp),
                 ) {
-                    Text(
-                        palace.changsheng12,
-                        fontSize = 8.sp,
-                        color = IztroTheme.decorator1,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 9.sp,
-                    )
-                    Text(
-                        palace.boshi12,
-                        fontSize = 8.sp,
-                        color = IztroTheme.decorator1,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 9.sp,
-                    )
+                    if (style.showPalaceDecor) {
+                        Text(
+                            palace.changsheng12,
+                            fontSize = 8.sp,
+                            color = IztroTheme.decorator1,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 9.sp,
+                        )
+                        Text(
+                            palace.boshi12,
+                            fontSize = 8.sp,
+                            color = IztroTheme.decorator1,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 9.sp,
+                        )
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = palace.name,
-                            fontSize = 11.sp,
+                            fontSize = style.palaceNameSp,
                             fontWeight = FontWeight.Bold,
                             color = IztroTheme.starMajorRed,
                             maxLines = 1,
-                            lineHeight = 13.sp,
+                            lineHeight = style.palaceNameSp * 1.15f,
                         )
                         if (palace.isBodyPalace) {
                             Text(
                                 text = "·身",
-                                fontSize = 9.sp,
+                                fontSize = style.ageSp,
                                 color = IztroTheme.starMajorRed,
                                 modifier = Modifier.padding(start = 1.dp),
                             )
@@ -305,40 +310,42 @@ fun Izpalace(
                         .hoverable(stemInteraction)
                         .clickable { onToggleFlyStar(palace.heavenlyStem) },
                 ) {
-                    Text(
-                        text = if (showYearly) {
-                            horoscope?.yearly?.suiqian12?.getOrNull(palace.index) ?: palace.suiqian12
-                        } else palace.suiqian12,
-                        fontSize = 8.sp,
-                        color = IztroTheme.decorator1,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 9.sp,
-                    )
-                    Text(
-                        text = if (showYearly) {
-                            horoscope?.yearly?.jiangqian12?.getOrNull(palace.index) ?: palace.jiangqian12
-                        } else palace.jiangqian12,
-                        fontSize = 8.sp,
-                        color = IztroTheme.decorator2,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 9.sp,
-                    )
+                    if (style.showPalaceDecor) {
+                        Text(
+                            text = if (showYearly) {
+                                horoscope?.yearly?.suiqian12?.getOrNull(palace.index) ?: palace.suiqian12
+                            } else palace.suiqian12,
+                            fontSize = 8.sp,
+                            color = IztroTheme.decorator1,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 9.sp,
+                        )
+                        Text(
+                            text = if (showYearly) {
+                                horoscope?.yearly?.jiangqian12?.getOrNull(palace.index) ?: palace.jiangqian12
+                            } else palace.jiangqian12,
+                            fontSize = 8.sp,
+                            color = IztroTheme.decorator2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 9.sp,
+                        )
+                    }
                     // 干支：选中宫位也不改背景/字色
                     Text(
                         text = palace.heavenlyStem,
-                        fontSize = 12.sp,
+                        fontSize = style.stemBranchSp,
                         fontWeight = FontWeight.Bold,
                         color = IztroTheme.nice,
-                        lineHeight = 13.sp,
+                        lineHeight = style.stemBranchSp * 1.1f,
                     )
                     Text(
                         text = palace.earthlyBranch,
-                        fontSize = 12.sp,
+                        fontSize = style.stemBranchSp,
                         fontWeight = FontWeight.Bold,
                         color = IztroTheme.nice,
-                        lineHeight = 13.sp,
+                        lineHeight = style.stemBranchSp * 1.1f,
                     )
                 }
             }
