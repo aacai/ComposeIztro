@@ -3,6 +3,8 @@ package zhiqiu.iztro.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -37,6 +39,7 @@ data class HoroscopeMutagenDisplay(
  * - 本命四化：红底白字科权禄忌
  * - 点击宫位后：按该宫干飞星/自化，星名背景着色（禄绿/权棕/科蓝/忌红）
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Izstar(
     star: DemoStar,
@@ -73,6 +76,16 @@ fun Izstar(
     val brightLineHeight = brightSize * 1.2f
     val nameWeight = if (star.type == "major") FontWeight.Bold else FontWeight.SemiBold
     val brightColor = theme.focus
+    val scopeBadgeCount = horoscopeMutagens.count { item ->
+        item.show && item.mutagen.indexOf(star.name) >= 0
+    }
+    val natalBadge = if (star.mutagen?.isNotEmpty() == true) 1 else 0
+    // 四化角标越多字号越小，减轻流时全开时的纵向压迫
+    val badgeSp = when {
+        natalBadge + scopeBadgeCount >= 5 -> 6.sp
+        natalBadge + scopeBadgeCount >= 3 -> 7.sp
+        else -> 8.sp
+    }
 
     Row(
         modifier = modifier
@@ -150,9 +163,9 @@ fun Izstar(
             star.mutagen?.takeIf { it.isNotEmpty() }?.let { mutagen ->
                 Text(
                     text = mutagen,
-                    fontSize = 11.sp,
+                    fontSize = badgeSp,
                     color = Color.White,
-                    lineHeight = 13.sp,
+                    lineHeight = badgeSp * 1.15f,
                     modifier = Modifier
                         .padding(top = 1.dp)
                         .clip(RoundedCornerShape(2.dp))
@@ -161,19 +174,27 @@ fun Izstar(
                 )
             }
 
-            horoscopeMutagens.forEach { item ->
-                if (item.show) {
-                    val idx = item.mutagen.indexOf(star.name)
-                    if (idx >= 0) {
+            // 运限四化全显；多时字号缩小，并横排换行降低总高度
+            val scopeBadges = horoscopeMutagens.mapNotNull { item ->
+                if (!item.show) return@mapNotNull null
+                val idx = item.mutagen.indexOf(star.name)
+                if (idx < 0) null else item.scope to MUTAGEN_LABELS[idx]
+            }
+            if (scopeBadges.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(1.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                    modifier = Modifier.padding(top = 1.dp),
+                ) {
+                    scopeBadges.forEach { (scope, label) ->
                         Text(
-                            text = MUTAGEN_LABELS[idx],
-                            fontSize = 10.sp,
+                            text = label,
+                            fontSize = badgeSp,
                             color = Color.White,
-                            lineHeight = 12.sp,
+                            lineHeight = badgeSp * 1.15f,
                             modifier = Modifier
-                                .padding(top = 1.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(theme.scopeColor(item.scope).copy(alpha = 0.75f))
+                                .background(theme.scopeColor(scope).copy(alpha = 0.75f))
                                 .padding(horizontal = 2.dp),
                         )
                     }

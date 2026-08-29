@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,6 +94,7 @@ fun Izpalace(
         }
     }
 
+    // 运限四化角标：各层都显示；字号由 Izstar 按数量自动缩小
     val horoscopeMutagens = horoscope?.let {
         listOf(
             HoroscopeMutagenDisplay("decadal", it.decadal.mutagen, showDecadal),
@@ -132,6 +132,14 @@ fun Izpalace(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
+                val decadalStars = if (showDecadal) {
+                    horoscope?.decadal?.stars?.getOrNull(palace.index).orEmpty()
+                } else emptyList()
+                val yearlyStars = if (showYearly) {
+                    horoscope?.yearly?.stars?.getOrNull(palace.index).orEmpty()
+                } else emptyList()
+                val hasHoroStars = decadalStars.isNotEmpty() || yearlyStars.isNotEmpty()
+
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(1.dp),
@@ -143,55 +151,51 @@ fun Izpalace(
                     palace.minorStars.forEach { star ->
                         PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
                     }
-                    Spacer(Modifier.weight(1f))
-                }
-
-                // 小限：紧贴主星下方（用户要求放在主星之下、靠上）
-                Text(
-                    text = palace.ages.take(if (style.compact) 5 else 7).joinToString(" "),
-                    fontSize = style.ageSp,
-                    color = IztroTheme.textMuted,
-                    textAlign = TextAlign.Start,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = style.ageSp * 1.15f,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-
-                if (showDecadal || showYearly) {
-                    FlowRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        if (showDecadal) {
-                            horoscope?.decadal?.stars?.getOrNull(palace.index)?.forEach {
-                                HoroStar(it, IztroTheme.active)
-                            }
+                    if (hasHoroStars) {
+                        FlowRow(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalArrangement = Arrangement.spacedBy(1.dp),
+                        ) {
+                            decadalStars.forEach { HoroStar(it, IztroTheme.active) }
+                            yearlyStars.forEach { HoroStar(it, IztroTheme.decorator2) }
                         }
-                        if (showYearly) {
-                            horoscope?.yearly?.stars?.getOrNull(palace.index)?.forEach {
-                                HoroStar(it, IztroTheme.decorator2)
-                            }
-                        }
+                    } else {
+                        Spacer(Modifier.weight(1f))
                     }
                 }
 
-                if (horoscopeNames.isNotEmpty()) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 17.dp)
-                            .padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        horoscopeNames.forEachIndexed { i, tag ->
-                            if (i > 0) Spacer(Modifier.padding(horizontal = 2.dp))
-                            FateScopeLabel(tag) {
-                                if (tag.scope != "age") onToggleScope(tag.scope)
+                // 小限靠左；运限 chip 同排靠右，避免浮层压住小限
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = palace.ages.take(if (style.compact) 5 else 7).joinToString(","),
+                        fontSize = style.ageSp,
+                        color = IztroTheme.textMuted,
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = style.ageSp * 1.15f,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .padding(end = 4.dp),
+                    )
+                    if (horoscopeNames.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            horoscopeNames.forEach { tag ->
+                                FateScopeLabel(tag, compact = style.compact) {
+                                    if (tag.scope != "age") onToggleScope(tag.scope)
+                                }
                             }
                         }
                     }
@@ -243,39 +247,10 @@ fun Izpalace(
                             )
                         }
                     }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(3.dp),
-                        modifier = Modifier.padding(top = 1.dp),
-                    ) {
-                        if (showDecadal) {
-                            horoscope?.decadal?.palaceNames?.getOrNull(palace.index)?.let {
-                                DynamicPalaceName(it, IztroTheme.active)
-                            }
-                        }
-                        if (showYearly) {
-                            horoscope?.yearly?.palaceNames?.getOrNull(palace.index)?.let {
-                                DynamicPalaceName(it, IztroTheme.decorator2)
-                            }
-                        }
-                        if (showMonthly) {
-                            horoscope?.monthly?.palaceNames?.getOrNull(palace.index)?.let {
-                                DynamicPalaceName(it, IztroTheme.nice)
-                            }
-                        }
-                        if (showDaily) {
-                            horoscope?.daily?.palaceNames?.getOrNull(palace.index)?.let {
-                                DynamicPalaceName(it, IztroTheme.decorator1)
-                            }
-                        }
-                        if (showHourly) {
-                            horoscope?.hourly?.palaceNames?.getOrNull(palace.index)?.let {
-                                DynamicPalaceName(it, IztroTheme.textMuted)
-                            }
-                        }
-                    }
+                    // 运限动态宫名改挂在中央宫名旁，这里不再横排全称（避免迁移等挤乱左下）
                 }
 
-                // 中：大限年龄在上，宫名（父母/兄弟等）贴底
+                // 中：大限年龄；其下 Row 左=时/日/月（底对齐上叠），右=年→运→本命宫名（同列紧贴，不被顶开）
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(horizontal = 2.dp),
@@ -289,24 +264,77 @@ fun Izpalace(
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = style.ageSp * 1.15f,
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = palace.name,
-                            fontSize = style.palaceNameSp,
-                            fontWeight = FontWeight.Bold,
-                            color = IztroTheme.starMajorRed,
-                            maxLines = 1,
-                            lineHeight = style.palaceNameSp * 1.15f,
-                        )
-                        if (palace.isBodyPalace) {
-                            Text(
-                                text = "·身",
-                                fontSize = style.palaceNameSp,
-                                fontWeight = FontWeight.Bold,
-                                color = IztroTheme.starMajorRed,
-                                modifier = Modifier.padding(start = 1.dp),
-                                lineHeight = style.palaceNameSp * 1.15f,
-                            )
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        // 时↑日↑月：贴本命宫名左侧，由下往上叠，不挤开年/运
+                        if (showHourly || showDaily || showMonthly) {
+                            Column(
+                                horizontalAlignment = Alignment.End,
+                                modifier = Modifier.padding(end = 2.dp),
+                            ) {
+                                if (showHourly) {
+                                    horoscope?.hourly?.palaceNames?.getOrNull(palace.index)?.let { full ->
+                                        DynamicPalaceName(
+                                            text = formatScopePalaceName("时", full),
+                                            color = IztroTheme.scopePalaceHourly,
+                                        )
+                                    }
+                                }
+                                if (showDaily) {
+                                    horoscope?.daily?.palaceNames?.getOrNull(palace.index)?.let { full ->
+                                        DynamicPalaceName(
+                                            text = formatScopePalaceName("日", full),
+                                            color = IztroTheme.scopePalaceDaily,
+                                        )
+                                    }
+                                }
+                                if (showMonthly) {
+                                    horoscope?.monthly?.palaceNames?.getOrNull(palace.index)?.let { full ->
+                                        DynamicPalaceName(
+                                            text = formatScopePalaceName("月", full),
+                                            color = IztroTheme.scopePalaceMonthly,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        // 年/运紧贴本命宫名上方，与时日月分列，激活流月流日时不会被顶走
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (showYearly) {
+                                horoscope?.yearly?.palaceNames?.getOrNull(palace.index)?.let { full ->
+                                    DynamicPalaceName(
+                                        text = formatScopePalaceName("年", full),
+                                        color = IztroTheme.scopePalaceYearly,
+                                    )
+                                }
+                            }
+                            if (showDecadal) {
+                                horoscope?.decadal?.palaceNames?.getOrNull(palace.index)?.let { full ->
+                                    DynamicPalaceName(
+                                        text = formatScopePalaceName("运", full),
+                                        color = IztroTheme.scopePalaceDecadal,
+                                    )
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = palace.name,
+                                    fontSize = style.palaceNameSp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = IztroTheme.starMajorRed,
+                                    maxLines = 1,
+                                    lineHeight = style.palaceNameSp * 1.15f,
+                                )
+                                if (palace.isBodyPalace) {
+                                    Text(
+                                        text = "·身",
+                                        fontSize = style.palaceNameSp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = IztroTheme.starMajorRed,
+                                        modifier = Modifier.padding(start = 1.dp),
+                                        lineHeight = style.palaceNameSp * 1.15f,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -365,6 +393,9 @@ private fun AdjStar(star: DemoStar) {
 
 @Composable
 private fun HoroStar(star: DemoStar, color: Color) {
+    val style = LocalAstrolabeStyle.current
+    // 运星统一小号，明显小于主星，避免挡主体；各星同字号
+    val size = style.horoStarSp
     val nameColor = when (star.type) {
         "lucun", "tough" -> IztroTheme.awesome
         "tianma", "helper" -> IztroTheme.active
@@ -373,42 +404,84 @@ private fun HoroStar(star: DemoStar, color: Color) {
     }
     Text(
         text = star.name,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.SemiBold,
+        fontSize = size,
+        fontWeight = FontWeight.Medium,
         color = nameColor,
         maxLines = 1,
-        lineHeight = 14.sp,
+        lineHeight = size * 1.1f,
     )
 }
 
 @Composable
-private fun DynamicPalaceName(name: String, color: Color) {
-    Text(name, fontSize = 12.sp, color = color, fontWeight = FontWeight.SemiBold, maxLines = 1)
+private fun DynamicPalaceName(text: String, color: Color) {
+    // 与本命宫名（迁移/父母等）同字号
+    val style = LocalAstrolabeStyle.current
+    val size = style.palaceNameSp
+    Text(
+        text = text,
+        fontSize = size,
+        color = color,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        lineHeight = size * 1.15f,
+    )
+}
+
+/** 全称宫名 → 运/年/月/日/时 + 单字简称，如 官禄→运官、疾厄→日凶 */
+private fun formatScopePalaceName(prefix: String, fullName: String): String =
+    prefix + shortPalaceName(fullName)
+
+private fun shortPalaceName(fullName: String): String = when {
+    fullName.contains("命") -> "命"
+    fullName.contains("兄") -> "兄"
+    fullName.contains("夫") || fullName.contains("妻") -> "夫"
+    fullName.contains("子") -> "子"
+    fullName.contains("财") -> "财"
+    fullName.contains("疾") || fullName.contains("厄") -> "凶"
+    fullName.contains("迁") -> "迁"
+    fullName.contains("仆") || fullName.contains("友") || fullName.contains("奴") -> "仆"
+    fullName.contains("官") -> "官"
+    fullName.contains("田") -> "田"
+    fullName.contains("福") -> "福"
+    fullName.contains("父") || fullName.contains("母") -> "父"
+    else -> fullName.takeLast(1).ifEmpty { fullName.take(1) }
 }
 
 @Composable
-private fun FateScopeLabel(tag: FateTag, onClick: () -> Unit) {
+private fun FateScopeLabel(tag: FateTag, compact: Boolean, onClick: () -> Unit) {
     val isActive = tag.show && tag.scope != "age"
     val bgColor = when {
         isActive -> IztroTheme.scopeColor(tag.scope)
         tag.scope == "age" -> Color.Transparent
         else -> IztroTheme.major
     }
+    val size = if (compact) 9.sp else 10.sp
     Text(
         text = buildString {
-            append(tag.name)
+            append(shortScopeLabel(tag.scope, tag.name))
             tag.heavenlyStem?.let { append("·$it") }
         },
-        fontSize = 13.sp,
+        fontSize = size,
         color = if (tag.scope == "age") IztroTheme.textMuted else Color.White,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
+        lineHeight = size * 1.15f,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(3.dp))
             .background(bgColor)
             .then(if (tag.scope != "age") Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 3.dp, vertical = 1.dp),
+            .padding(horizontal = 3.dp, vertical = 0.dp),
     )
+}
+
+/** 大限/流年… → 限/年/月/日/时，缩小占位 */
+private fun shortScopeLabel(scope: String, fallback: String): String = when (scope) {
+    "decadal" -> "限"
+    "yearly" -> "年"
+    "monthly" -> "月"
+    "daily" -> "日"
+    "hourly" -> "时"
+    else -> fallback.takeLast(1).ifEmpty { fallback.take(1) }
 }
 
 private data class FateTag(

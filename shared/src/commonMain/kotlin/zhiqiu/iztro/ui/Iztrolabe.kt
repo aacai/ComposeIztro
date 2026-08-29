@@ -278,13 +278,64 @@ private fun AstrolabeGrid(
         }
     }
 
+    // 运限层层递进：打开某层则激活其前序；关闭某层则关掉其后所有更深层级
     fun toggleScope(scope: String) {
         when (scope) {
-            "decadal" -> showDecadal = !showDecadal
-            "yearly" -> showYearly = !showYearly
-            "monthly" -> showMonthly = !showMonthly
-            "daily" -> showDaily = !showDaily
-            "hourly" -> showHourly = !showHourly
+            "decadal" -> {
+                if (showDecadal) {
+                    showDecadal = false
+                    showYearly = false
+                    showMonthly = false
+                    showDaily = false
+                    showHourly = false
+                } else {
+                    showDecadal = true
+                }
+            }
+            "yearly" -> {
+                if (showYearly) {
+                    showYearly = false
+                    showMonthly = false
+                    showDaily = false
+                    showHourly = false
+                } else {
+                    showDecadal = true
+                    showYearly = true
+                }
+            }
+            "monthly" -> {
+                if (showMonthly) {
+                    showMonthly = false
+                    showDaily = false
+                    showHourly = false
+                } else {
+                    showDecadal = true
+                    showYearly = true
+                    showMonthly = true
+                }
+            }
+            "daily" -> {
+                if (showDaily) {
+                    showDaily = false
+                    showHourly = false
+                } else {
+                    showDecadal = true
+                    showYearly = true
+                    showMonthly = true
+                    showDaily = true
+                }
+            }
+            "hourly" -> {
+                if (showHourly) {
+                    showHourly = false
+                } else {
+                    showDecadal = true
+                    showYearly = true
+                    showMonthly = true
+                    showDaily = true
+                    showHourly = true
+                }
+            }
         }
     }
 
