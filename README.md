@@ -293,6 +293,86 @@ BaziFlowPage(chart = flow, onSelectionChange = { selection = it })
 
 页面 Tab 组织（原局 / 流盘切换、紫微 / 八字切换）由宿主实现——参考 `androidApp` 与 `desktopApp` 演示（顶栏「紫微斗数 / 八字」Tab，八字页内「原局 / 流盘」Tab，示例命造与紫微演示一致：2000-8-16 寅时 女）。
 
+## 以 Git Submodule 方式引入
+
+本仓库的每个模块（`:iztro-core`、`:shared`、`:bazi-core`、`:bazi-ui`）都是标准的 Gradle 子工程，
+因此可以不发布到 Maven，而是作为 **Git submodule** 直接挂到你的 Compose Multiplatform 工程里使用。
+
+> 仓库地址：https://github.com/aacai/ComposeIztro
+
+### 1. 添加 submodule
+
+```bash
+git submodule add https://github.com/aacai/ComposeIztro thirdparty/ComposeIztro
+git submodule update --init --recursive
+```
+
+上面把本仓库挂到宿主工程根目录下的 `thirdparty/ComposeIztro`（路径可自定义）。
+
+### 2. 在宿主的 `settings.gradle.kts` 中引入所需模块
+
+```kotlin
+// settings.gradle.kts
+include(":iztro-core")
+project(":iztro-core").projectDir = file("thirdparty/ComposeIztro/iztro-core")
+
+include(":shared")
+project(":shared").projectDir = file("thirdparty/ComposeIztro/shared")
+
+// 八字模块按需引入
+include(":bazi-core")
+project(":bazi-core").projectDir = file("thirdparty/ComposeIztro/bazi/bazi-core")
+include(":bazi-ui")
+project(":bazi-ui").projectDir = file("thirdparty/ComposeIztro/bazi/bazi-ui")
+```
+
+`shared` 通过 project 引用依赖 `iztro-core`、`bazi-ui` 依赖 `bazi-core`，因此二者需一并引入，否则 Gradle 解析依赖时找不到对应工程。
+
+### 3. 版本目录（`libs.versions.toml`）对齐
+
+各模块通过宿主工程的 `gradle/libs.versions.toml` 解析插件与依赖版本，版本不一致会报插件/依赖找不到或版本冲突。
+请保证宿主版本目录包含以下关键条目（与子模块保持一致）：
+
+| 条目 | 版本 |
+|---|---|
+| kotlin | 2.4.10 |
+| composeMultiplatform | 1.11.1 |
+| agp | 9.0.1 |
+| androidx-lifecycle | 2.11.0-beta01 |
+| material3 | 1.11.0-alpha07 |
+| kotlinx-datetime | 0.7.1 |
+| tyme4kt | 1.5.0 |
+
+最简单的做法：直接合并 `thirdparty/ComposeIztro/gradle/libs.versions.toml` 中的 `[versions]`/`[libraries]`/`[plugins]` 到宿主版本目录。
+插件别名（`libs.plugins.*`）需能在宿主根 `build.gradle.kts` 的 `pluginManagement` 中解析（本仓库已用别名声明）。
+
+### 4. 在宿主模块里声明依赖
+
+```kotlin
+// 任意 KMP 模块（如 :composeApp）的 build.gradle.kts
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":shared"))      // 紫微 UI 组件
+            // implementation(project(":iztro-core")) // 仅需算法时
+            // implementation(project(":bazi-ui"))
+        }
+    }
+}
+```
+
+### 5. 平台接入注意事项
+
+- **Android**：`iztro-core`/`bazi-core` 已声明 `namespace`，宿主无需重复；`minSdk ≥ 24`。
+- **Web (Wasm)**：`iztro-core` 与 `shared` 仅提供 `wasmJs` target（与 `tyme4kt` 一致），宿主需 `wasmJs { browser() }`，并用 `@OptIn(ExperimentalWasmDsl::class)` 开启。
+- **iOS**：各模块产出静态 framework（`baseName = "Shared"`），在宿主 iOS 工程中按常规 Compose 方式链接。
+- **Desktop (JVM)**：直接 `jvm()` 即可。
+
+### 6. 仅用算法（不引入 UI）
+
+若只想要排盘数据、不需要 Compose 组件，只需引入 `:iztro-core`（紫微）或 `:bazi-core`（八字），
+二者均为纯 Kotlin Multiplatform 库、不依赖 UI 层，用法见上文「核心引擎」与「八字模块」。
+
 ## 许可证
 
 MIT License
