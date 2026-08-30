@@ -8,6 +8,8 @@ plugins {
 
 dependencies {
     implementation(project(":shared"))
+    implementation(project(":bazi-ui"))
+    implementation(compose.material3)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)

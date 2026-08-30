@@ -1,6 +1,6 @@
 # ComposeIztro
 
-基于 [Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform) 的跨平台**紫微斗数**排盘与渲染引擎，支持 Android、iOS、Desktop (JVM)、Web (Wasm) 四个平台。
+基于 [Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform) 的跨平台**紫微斗数**排盘与渲染引擎，附带**八字**排盘模块（`bazi-core` / `bazi-ui`），支持 Android、iOS、Desktop (JVM)、Web (Wasm) 四个平台。
 
 ## 功能特性
 
@@ -199,6 +199,99 @@ fun MyApp() {
     // state.setHoroscope(date, hour) — 切换运限日期
 }
 ```
+
+## 八字模块 (`bazi-core` / `bazi-ui`)
+
+跨平台**八字**排盘模块，与紫微同一套工程结构：
+
+| 模块 | 内容 | 依赖 |
+|---|---|---|
+| `bazi/bazi-core` | 四柱、藏干、十神、神煞、空亡、地势、干支作用、大运/流年/流月、四柱反查 | 仅 `tyme4kt` + `kotlinx-datetime` |
+| `bazi/bazi-ui` | Compose 盘面：原局页、流盘页、五行配色 | `bazi-core` + Compose |
+
+设计原则：**无宿主概念**（输入输出都是纯数据）、**页面无导航**（Tab 组织由宿主实现，参考 `androidApp` / `desktopApp` 演示）。接入方式：
+
+```kotlin
+// settings.gradle.kts
+include(":bazi-core")
+project(":bazi-core").projectDir = file("bazi/bazi-core")
+
+include(":bazi-ui")
+project(":bazi-ui").projectDir = file("bazi/bazi-ui")
+```
+
+### 排原局
+
+```kotlin
+import com.tyme.solar.SolarTime
+import zhiqiu.iztro.bazi.original.OriginalBuilder
+import zhiqiu.iztro.bazi.original.formatBirthTermLabel
+import zhiqiu.iztro.bazi.original.formatSolarTimeLabel
+
+val birth = SolarTime(2000, 8, 16, 3, 30, 0)          // 寅时（时辰取中点）
+val eight = birth.getLunarHour().getEightChar()
+
+val chart = OriginalBuilder.build(
+    eightChar = eight,
+    gender = "女",
+    solarLabel = formatSolarTimeLabel(birth),          // 真太阳时：2000年8月16日 03:30
+    termLabel = formatBirthTermLabel(birth),           // 出生节气：出生于立秋(…)后X天X小时
+)
+// chart.pillars：四柱（干支/藏干/十神/纳音/空亡/地势/神煞）
+// chart.stemRelations / branchRelations：天干五合·冲·克、地支三合·三会·六冲·刑·害·暗合
+// chart.elementPhases：五行旺相休囚死
+```
+
+### 排流盘（大运 / 流年 / 流月）
+
+```kotlin
+import zhiqiu.iztro.bazi.flow.FlowBuilder
+import zhiqiu.iztro.bazi.flow.FlowSelection
+
+// selection 传 null 时自动定位到当前日期；点选后把新 FlowSelection 传回重排
+val flow = FlowBuilder.build(
+    birth = birth,
+    gender = "女",
+    selection = FlowSelection(decadeIndex = 0, yearIndex = 0, monthIndex = 0),
+)
+// flow.pillars：七柱（年月日时 + 大运 + 流年 + 流月）
+// flow.decades / years / months：三级选择器数据
+```
+
+### 四柱反查公历
+
+```kotlin
+import zhiqiu.iztro.bazi.lookup.BaziPillars
+import zhiqiu.iztro.bazi.lookup.StemBranch
+import zhiqiu.iztro.bazi.lookup.reverseLookup
+
+val pillars = BaziPillars(
+    year = StemBranch("庚", "辰"),
+    month = StemBranch("甲", "申"),
+    day = StemBranch("丙", "子"),
+    hour = StemBranch("庚", "寅"),
+)
+val candidates = reverseLookup(pillars, yearFrom = 1940, yearTo = 2030)
+// candidates：List<BaziCandidate>（公历日期 + 农历日期 + 时辰序号 + 四柱）
+// 反查前可用 validatePillars(pillars) 校验五虎遁 / 五鼠遁
+```
+
+### Compose 盘面
+
+```kotlin
+import zhiqiu.iztro.bazi.ui.BaziFlowPage
+import zhiqiu.iztro.bazi.ui.BaziOriginalPage
+
+// 原局页（宿主自己排盘后传入）
+BaziOriginalPage(chart = chart)
+
+// 流盘页（选择变化通过回调上抛，宿主重排后传入新 chart）
+var selection by remember { mutableStateOf<FlowSelection?>(null) }
+val flow = remember(selection) { FlowBuilder.build(birth, "女", selection) }
+BaziFlowPage(chart = flow, onSelectionChange = { selection = it })
+```
+
+页面 Tab 组织（原局 / 流盘切换、紫微 / 八字切换）由宿主实现——参考 `androidApp` 与 `desktopApp` 演示（顶栏「紫微斗数 / 八字」Tab，八字页内「原局 / 流盘」Tab，示例命造与紫微演示一致：2000-8-16 寅时 女）。
 
 ## 许可证
 

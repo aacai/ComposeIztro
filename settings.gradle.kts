@@ -33,6 +33,12 @@ plugins {
 
 include(":androidApp")
 include(":desktopApp")
+include(":bazi-core")
+project(":bazi-core").projectDir = file("bazi/bazi-core")
+
+include(":bazi-ui")
+project(":bazi-ui").projectDir = file("bazi/bazi-ui")
+
 include(":iztro-core")
 include(":shared")
 include(":webApp")

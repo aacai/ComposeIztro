@@ -20,7 +20,6 @@ import zhiqiu.iztro.ui.IztroColorMode
 import zhiqiu.iztro.ui.IztroTheme
 import zhiqiu.iztro.ui.IztroThemeProvider
 import zhiqiu.iztro.ui.Iztrolabe
-import zhiqiu.iztro.ui.currentSolarDate
 
 @Composable
 @Preview
@@ -42,8 +41,9 @@ fun App() {
                     gender = "女",
                     birthdayType = "solar",
                     name = "示例",
-                    horoscopeDate = currentSolarDate(),
-                    horoscopeHour = 2,
+                    // 示例运限时刻：2026-8-29 13:30（属未时，时辰索引 7）
+                    horoscopeDate = "2026-8-29",
+                    horoscopeHour = 7,
                     colorMode = colorMode,
                     onColorModeChange = { colorMode = it },
                     modifier = Modifier.fillMaxSize(),

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import zhiqiu.iztro.DemoHoroscope
@@ -43,6 +44,7 @@ import zhiqiu.iztro.DemoStar
  * - 杂曜（奏书/月煞/伏兵/贯索等）左下横向、上下层叠
  * - 宫名底部偏右
  * - 干支右下角上下堆叠
+ * - 小限默认在主星下方；下方被四化角标/运星/footer 占满时自动挪到星曜右侧空白
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -125,91 +127,57 @@ fun Izpalace(
             .clickable { onClickPalace(palace.index) }
             .padding(style.cellPad),
     ) {
-        // 主星区可滚动；footer（含大限年龄）align(Bottom) 钉在宫格最底。
-        Box(Modifier.fillMaxSize()) {
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                val decadalStars = if (showDecadal) {
-                    horoscope?.decadal?.stars?.getOrNull(palace.index).orEmpty()
-                } else emptyList()
-                val yearlyStars = if (showYearly) {
-                    horoscope?.yearly?.stars?.getOrNull(palace.index).orEmpty()
-                } else emptyList()
-                val hasHoroStars = decadalStars.isNotEmpty() || yearlyStars.isNotEmpty()
+        // 主星区可滚动；footer 钉在最底；小限由 PalaceLayout 按剩余空白自动落位
+        PalaceLayout(
+            modifier = Modifier.fillMaxSize(),
+            stars = {
+                Box(Modifier.verticalScroll(rememberScrollState())) {
+                    val decadalStars = if (showDecadal) {
+                        horoscope?.decadal?.stars?.getOrNull(palace.index).orEmpty()
+                    } else emptyList()
+                    val yearlyStars = if (showYearly) {
+                        horoscope?.yearly?.stars?.getOrNull(palace.index).orEmpty()
+                    } else emptyList()
+                    val hasHoroStars = decadalStars.isNotEmpty() || yearlyStars.isNotEmpty()
 
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(1.dp),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    palace.majorStars.forEach { star ->
-                        PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
-                    }
-                    palace.minorStars.forEach { star ->
-                        PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
-                    }
-                    if (hasHoroStars) {
-                        FlowRow(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 3.dp),
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
-                            verticalArrangement = Arrangement.spacedBy(1.dp),
-                        ) {
-                            decadalStars.forEach { HoroStar(it, IztroTheme.active) }
-                            yearlyStars.forEach { HoroStar(it, IztroTheme.decorator2) }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(1.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        palace.majorStars.forEach { star ->
+                            PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
                         }
-                    } else {
-                        Spacer(Modifier.weight(1f))
-                    }
-                }
-
-                // 小限靠左；运限 chip 同排靠右，避免浮层压住小限
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = palace.ages.take(if (style.compact) 5 else 7).joinToString(","),
-                        fontSize = style.ageSp,
-                        color = IztroTheme.textMuted,
-                        textAlign = TextAlign.Start,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = style.ageSp * 1.15f,
-                        modifier = Modifier
-                            .weight(1f, fill = false)
-                            .padding(end = 4.dp),
-                    )
-                    if (horoscopeNames.isNotEmpty()) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            horoscopeNames.forEach { tag ->
-                                FateScopeLabel(tag, compact = style.compact) {
-                                    if (tag.scope != "age") onToggleScope(tag.scope)
-                                }
+                        palace.minorStars.forEach { star ->
+                            PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
+                        }
+                        if (hasHoroStars) {
+                            FlowRow(
+                                modifier = Modifier.padding(start = 3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalArrangement = Arrangement.spacedBy(1.dp),
+                            ) {
+                                decadalStars.forEach { HoroStar(it, IztroTheme.active) }
+                                yearlyStars.forEach { HoroStar(it, IztroTheme.decorator2) }
                             }
                         }
                     }
                 }
-            }
-
-            // footer 钉在宫格最底：左杂曜/小注、中（大限在上+宫名在下）、右干支，三者底对齐。
-            Row(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(bg),
-                verticalAlignment = Alignment.Bottom,
-            ) {
+            },
+            ages = { narrow ->
+                AgesBlock(
+                    palace = palace,
+                    horoscopeNames = horoscopeNames,
+                    narrow = narrow,
+                    onToggleScope = onToggleScope,
+                )
+            },
+            footer = {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(bg),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
                 Column(Modifier.weight(1f)) {
                     if (palace.adjectiveStars.isNotEmpty()) {
                         val maxPerCol = if (style.compact) 5 else 4
@@ -369,6 +337,122 @@ fun Izpalace(
                         color = IztroTheme.nice,
                         lineHeight = style.stemBranchSp * 1.1f,
                     )
+                }
+                }
+            },
+        )
+    }
+}
+
+/**
+ * 宫位三段式布局：星曜区（可滚动）、footer（钉最底）、小限（自动落位）。
+ * 小限默认落在星曜下方；当星曜因四化角标/运星变高、下方被 footer 占满时，
+ * 自动改落到星曜右侧的空白处，避免被压住。
+ */
+@Composable
+private fun PalaceLayout(
+    modifier: Modifier = Modifier,
+    stars: @Composable () -> Unit,
+    /** narrow = 空间紧张（放右侧空白），年龄个数随之压缩 */
+    ages: @Composable (narrow: Boolean) -> Unit,
+    footer: @Composable () -> Unit,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val w = constraints.maxWidth
+        val h = constraints.maxHeight
+        val gap = 2.dp.roundToPx()
+        val minRightSpace = 30.dp.roundToPx()
+
+        val footerPlaceable = subcompose(PalaceSlot.Footer) { footer() }
+            .first()
+            .measure(Constraints.fixedWidth(w).copy(maxHeight = h))
+        val footerTop = (h - footerPlaceable.height).coerceAtLeast(0)
+
+        // 星曜区最多占到 footer 上沿，保证 footer 不被内容顶掉
+        val starsPlaceable = subcompose(PalaceSlot.Stars) { stars() }
+            .first()
+            .measure(constraints.copy(minWidth = 0, minHeight = 0, maxHeight = footerTop.coerceAtLeast(1)))
+
+        var agesPlaceable = subcompose(PalaceSlot.Ages) { ages(false) }
+            .first()
+            .measure(constraints.copy(minWidth = 0, minHeight = 0))
+        var agesX = 0
+        var agesY = (starsPlaceable.height + gap).coerceAtMost(footerTop)
+
+        if (agesY + agesPlaceable.height > footerTop) {
+            val rightSpace = w - starsPlaceable.width - gap
+            val narrowPlaceable = subcompose(PalaceSlot.AgesNarrow) { ages(true) }
+                .first()
+                .measure(
+                    constraints.copy(
+                        minWidth = 0,
+                        minHeight = 0,
+                        maxWidth = rightSpace.coerceAtLeast(0),
+                        maxHeight = starsPlaceable.height.coerceAtLeast(1),
+                    ),
+                )
+            if (rightSpace >= minRightSpace && narrowPlaceable.width <= rightSpace) {
+                agesPlaceable = narrowPlaceable
+                agesX = w - narrowPlaceable.width
+                agesY = (starsPlaceable.height - narrowPlaceable.height).coerceAtLeast(0)
+            } else {
+                // 兜底：贴 footer 上沿靠右，至少不会被 footer 盖住
+                agesX = (w - agesPlaceable.width).coerceAtLeast(0)
+                agesY = (footerTop - agesPlaceable.height - gap).coerceAtLeast(0)
+            }
+        }
+
+        layout(w, h) {
+            starsPlaceable.place(0, 0)
+            footerPlaceable.place(0, footerTop)
+            agesPlaceable.place(agesX, agesY)
+        }
+    }
+}
+
+private enum class PalaceSlot { Stars, Ages, AgesNarrow, Footer }
+
+/** 小限年龄串 + 同排运限 chip；narrow 时压缩年龄个数，便于塞进右侧窄空白 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AgesBlock(
+    palace: DemoPalace,
+    horoscopeNames: List<FateTag>,
+    narrow: Boolean,
+    onToggleScope: (String) -> Unit,
+) {
+    val style = LocalAstrolabeStyle.current
+    val maxAges = when {
+        narrow -> 3
+        style.compact -> 5
+        else -> 7
+    }
+    Row(
+        modifier = if (narrow) Modifier.padding(top = 2.dp) else Modifier.fillMaxWidth().padding(top = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = palace.ages.take(maxAges).joinToString(","),
+            fontSize = style.ageSp,
+            color = IztroTheme.textMuted,
+            textAlign = TextAlign.Start,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = style.ageSp * 1.15f,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .padding(end = 4.dp),
+        )
+        if (horoscopeNames.isNotEmpty()) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                horoscopeNames.forEach { tag ->
+                    FateScopeLabel(tag, compact = style.compact) {
+                        if (tag.scope != "age") onToggleScope(tag.scope)
+                    }
                 }
             }
         }
