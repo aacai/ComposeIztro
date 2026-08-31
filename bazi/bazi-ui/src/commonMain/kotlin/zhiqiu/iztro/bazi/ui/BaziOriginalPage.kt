@@ -1,6 +1,7 @@
 package zhiqiu.iztro.bazi.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,16 +34,33 @@ private val PhaseBarBg = Color(0xFFF7F2E9)
 private val PhaseDivider = Color(0xFFD8D0C6)
 
 /**
+ * 八字可点击元素的类别。
+ */
+enum class BaziElementType {
+    /** 神煞 */
+    ShenSha,
+    /** 十神 */
+    TenGod,
+}
+
+/**
  * 原局盘面。宿主负责排盘：传入 [chart]（如 `profile.toOriginalChart()`）。
  * 排盘失败由宿主处理（构造不出 chart 就不进本页）。
+ * [onBaziElementClick] 在点击神煞 / 十神等八字元素时回调，宿主可据此弹出释义等。
  */
 @Composable
-fun BaziOriginalPage(chart: OriginalChart) {
-    OriginalBody(chart)
+fun BaziOriginalPage(
+    chart: OriginalChart,
+    onBaziElementClick: ((type: BaziElementType, name: String) -> Unit)? = null,
+) {
+    OriginalBody(chart, onBaziElementClick)
 }
 
 @Composable
-fun OriginalBody(chart: OriginalChart) {
+fun OriginalBody(
+    chart: OriginalChart,
+    onBaziElementClick: ((type: BaziElementType, name: String) -> Unit)? = null,
+) {
     val pillars = chart.pillars
     Column(
         modifier = Modifier
@@ -135,6 +153,9 @@ fun OriginalBody(chart: OriginalChart) {
                                 color = WuXingColors.ofElement(h.element),
                                 fontSize = 11.sp,
                                 lineHeight = 11.sp,
+                                modifier = Modifier.clickable(enabled = onBaziElementClick != null) {
+                                    onBaziElementClick?.invoke(BaziElementType.TenGod, h.tenGod)
+                                },
                             )
                         }
                     }
@@ -182,7 +203,15 @@ fun OriginalBody(chart: OriginalChart) {
                             Text("—", color = WuXingColors.Muted, fontSize = 13.sp, lineHeight = 13.sp)
                         } else {
                             p.shenSha.forEach { name ->
-                                Text(name, color = WuXingColors.Ink, fontSize = 13.sp, lineHeight = 13.sp)
+                                Text(
+                                    name,
+                                    color = WuXingColors.Ink,
+                                    fontSize = 13.sp,
+                                    lineHeight = 13.sp,
+                                    modifier = Modifier.clickable(enabled = onBaziElementClick != null) {
+                                        onBaziElementClick?.invoke(BaziElementType.ShenSha, name)
+                                    },
+                                )
                             }
                         }
                     }
