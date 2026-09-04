@@ -26,20 +26,16 @@ fun getAdjectiveStar(param: AstrolabeParam): List<List<Star>> {
     val monthlyIndex = getMonthlyStarIndex(solarDate, timeIndex, fixLeap)
     val dailyIndex = getDailyStarIndex(solarDate, timeIndex, fixLeap)
     val timelyIndex = getTimelyStarIndex(timeIndex)
-    val (hongluanIndex, tianxiIndex) = getLuanXiIndex(yearly.second)
     val suiqian12 = getYearly12(solarDate).suiqian12
 
     fun add(idx: Int, key: String, type: String) {
         stars[idx].add(Star(t(key), type, "origin"))
     }
 
-    add(hongluanIndex, "hongluan", "flower")
-    add(tianxiIndex, "tianxi", "flower")
+    // 红鸾天喜三台八座已移入 minorStars（竖排展示）
     add(monthlyIndex.tianyaoIndex, "tianyao", "flower")
     add(yearlyIndex.xianchiIndex, "xianchi", "flower")
     add(monthlyIndex.yuejieIndex, "jieshen", "helper")
-    add(dailyIndex.santaiIndex, "santai", "adjective")
-    add(dailyIndex.bazuoIndex, "bazuo", "adjective")
     add(dailyIndex.enguangIndex, "enguang", "adjective")
     add(dailyIndex.tianguiIndex, "tiangui", "adjective")
     add(yearlyIndex.longchiIndex, "longchi", "adjective")

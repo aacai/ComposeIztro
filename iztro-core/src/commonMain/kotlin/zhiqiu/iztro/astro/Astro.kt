@@ -20,6 +20,7 @@ import zhiqiu.iztro.star.getMajorStar
 import zhiqiu.iztro.star.getMinorStar
 import zhiqiu.iztro.star.getYearly12
 import zhiqiu.iztro.star.getchangsheng12
+import zhiqiu.iztro.star.gradeBStarNames
 import zhiqiu.iztro.utils.fixIndex
 import zhiqiu.iztro.utils.translateChineseDate
 
@@ -56,11 +57,15 @@ fun bySolar(
     val yearly12 = getYearly12(solarDate)
     val horoscope = getHoroscope(param)
 
+    // 乙级星提升为辅星（竖排），丙级以下留宫位左下横排杂曜
+    val gradeBNames = gradeBStarNames()
     for (i in 0 until 12) {
         val heavenlyStemOfPalace = HEAVENLY_STEMS[
             fixIndex(HEAVENLY_STEMS.indexOf(kot<String>(soulAndBody.heavenlyStemOfSoul, "Heavenly")) - soulAndBody.soulIndex + i, 10)
         ]
         val earthlyBranchOfPalace = EARTHLY_BRANCHES[fixIndex(2 + i)]
+        val promoted = adjectiveStars[i].filter { it.name in gradeBNames }
+        val remaining = adjectiveStars[i].filterNot { it.name in gradeBNames }
         palaces.add(
             Palace(
                 index = i,
@@ -71,8 +76,8 @@ fun bySolar(
                 heavenlyStem = t(heavenlyStemOfPalace),
                 earthlyBranch = t(earthlyBranchOfPalace),
                 majorStars = majorStars[i],
-                minorStars = minorStars[i],
-                adjectiveStars = adjectiveStars[i],
+                minorStars = minorStars[i] + promoted,
+                adjectiveStars = remaining,
                 changsheng12 = changsheng12[i],
                 boshi12 = boshi12[i],
                 jiangqian12 = yearly12.jiangqian12[i],

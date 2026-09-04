@@ -15,6 +15,8 @@ data class AstrolabeStyle(
     val compact: Boolean,
     val cellGap: Dp,
     val cellPad: Dp,
+    /** 卡片风格子圆角 */
+    val cellCorner: Dp,
     /** 外圈/中宫垂直权重 */
     val rowWeightOuter: Float,
     val rowWeightMid: Float,
@@ -36,8 +38,9 @@ data class AstrolabeStyle(
     companion object {
         val Comfortable = AstrolabeStyle(
             compact = false,
-            cellGap = 1.5.dp,
+            cellGap = 3.dp,
             cellPad = 3.dp,
+            cellCorner = 8.dp,
             rowWeightOuter = 1f,
             rowWeightMid = 2f,
             majorStarSp = 15.sp,
@@ -56,8 +59,9 @@ data class AstrolabeStyle(
 
         val Compact = AstrolabeStyle(
             compact = true,
-            cellGap = 1.dp,
+            cellGap = 2.dp,
             cellPad = 2.dp,
+            cellCorner = 6.dp,
             // 正方形盘内仍用经典 1:2:1，保证中宫够用、外圈不至于过高
             rowWeightOuter = 1f,
             rowWeightMid = 2f,

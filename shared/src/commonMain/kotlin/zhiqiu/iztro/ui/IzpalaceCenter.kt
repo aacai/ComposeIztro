@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -100,7 +101,8 @@ fun IzpalaceCenter(
 
     Box(
         modifier = modifier
-            .border(1.dp, IztroTheme.border)
+            .clip(RoundedCornerShape(style.cellCorner))
+            .border(1.dp, IztroTheme.gridLine, RoundedCornerShape(style.cellCorner))
             .background(IztroTheme.centerBg)
             .padding(pad),
     ) {

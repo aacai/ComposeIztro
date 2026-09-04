@@ -22,6 +22,8 @@ fun getMinorStar(solarDateStr: String, timeIndex: Int, fixLeap: Boolean = false)
     val (huoIndex, lingIndex) = getHuoLingIndex(yearly.second, timeIndex)
     val (kongIndex, jieIndex) = getKongJieIndex(timeIndex)
     val (luIndex, yangIndex, tuoIndex, maIndex) = getLuYangTuoMaIndex(yearly.first, yearly.second)
+    val (hongluanIndex, tianxiIndex) = getLuanXiIndex(yearly.second)
+    val dailyIndex = getDailyStarIndex(solarDateStr, timeIndex, fixLeap)
 
     fun add(idx: Int, key: String, type: String, withMutagen: Boolean = false) {
         val name = t<String>(key)
@@ -50,6 +52,11 @@ fun getMinorStar(solarDateStr: String, timeIndex: Int, fixLeap: Boolean = false)
     add(lingIndex, "lingxingMin", "tough")
     add(yangIndex, "qingyangMin", "tough")
     add(tuoIndex, "tuoluoMin", "tough")
+    // 红鸾天喜三台八座：优先级较高的吉曜，竖排展示（同禄存天马）
+    add(hongluanIndex, "hongluan", "flower")
+    add(tianxiIndex, "tianxi", "flower")
+    add(dailyIndex.santaiIndex, "santai", "soft")
+    add(dailyIndex.bazuoIndex, "bazuo", "soft")
 
     return stars
 }
