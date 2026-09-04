@@ -142,15 +142,22 @@ fun Izpalace(
                     } else emptyList()
                     val hasHoroStars = decadalStars.isNotEmpty() || yearlyStars.isNotEmpty()
 
+                    // 竖排星过多时缩小字号：每星约占 1.6 行（星名+亮度），超容量线性降字号，下限 0.6
+                    val verticalStarCount = palace.majorStars.size + palace.minorStars.size
+                    val capacity = if (style.compact) 6 else 7
+                    val nameSizeScale = if (verticalStarCount > capacity) {
+                        (capacity.toFloat() / verticalStarCount).coerceIn(0.6f, 1f)
+                    } else 1f
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(1.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
                         palace.majorStars.forEach { star ->
-                            PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
+                            PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens, nameSizeScale)
                         }
                         palace.minorStars.forEach { star ->
-                            PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens)
+                            PalaceStar(star, palace.heavenlyStem, activeHeavenlyStem, hoverHeavenlyStem, horoscopeMutagens, nameSizeScale)
                         }
                         if (hasHoroStars) {
                             FlowRow(
@@ -468,8 +475,9 @@ private fun PalaceStar(
     activeStem: String?,
     hoverStem: String?,
     horoscopeMutagens: List<HoroscopeMutagenDisplay>,
+    nameSizeScale: Float = 1f,
 ) {
-    Izstar(star, palaceStem, activeStem, hoverStem, horoscopeMutagens, horizontal = false)
+    Izstar(star, palaceStem, activeStem, hoverStem, horoscopeMutagens, horizontal = false, nameSizeScale = nameSizeScale)
 }
 
 @Composable

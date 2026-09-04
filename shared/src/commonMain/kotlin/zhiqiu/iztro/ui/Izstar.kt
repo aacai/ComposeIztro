@@ -50,6 +50,8 @@ fun Izstar(
     modifier: Modifier = Modifier,
     /** 杂曜等低级星：横向一字排开，不竖排 */
     horizontal: Boolean = false,
+    /** 竖排星过多时整体缩放字号（0.6~1f），保证放得下 */
+    nameSizeScale: Float = 1f,
 ) {
     val style = LocalAstrolabeStyle.current
     val theme = IztroTheme
@@ -69,10 +71,10 @@ fun Izstar(
     val hoverBarColor = hoverMutagenIndex?.let { theme.selfMutagenBgs[it] }
     val barHeight = 3.dp
     val density = LocalDensity.current
-    // 竖排星曜（主星/辅星）名字统一字号；仅横向杂曜保持较小字号
-    val nameSize = if (horizontal) style.adjStarSp else style.majorStarSp
+    // 竖排星曜（主星/辅星）名字统一字号；仅横向杂曜保持较小字号；竖排过多时按 scale 缩小
+    val nameSize = if (horizontal) style.adjStarSp else style.majorStarSp * nameSizeScale
     val nameLineHeight = nameSize * 1.15f
-    val brightSize = style.brightSp
+    val brightSize = style.brightSp * nameSizeScale
     val brightLineHeight = brightSize * 1.2f
     val nameWeight = if (star.type == "major") FontWeight.Bold else FontWeight.SemiBold
     val brightColor = theme.focus
