@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,9 +30,12 @@ import zhiqiu.iztro.bazi.original.OriginalChart
 import zhiqiu.iztro.bazi.original.PillarView
 
 private val LabelWidth = 36.dp
-private val LabelColor = Color(0xFF5A5A5A)
-private val PhaseBarBg = Color(0xFFF7F2E9)
-private val PhaseDivider = Color(0xFFD8D0C6)
+private val LabelColor: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.label
+private val PhaseBarBg: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.phaseBarBg
+private val PhaseDivider: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.phaseDivider
 
 /**
  * 八字可点击元素的类别。
@@ -168,7 +172,7 @@ fun OriginalBody(
                 PillarCells(pillars) { p ->
                     Text(
                         p.nayin,
-                        color = nayinColor(p.nayin),
+                        color = BaziTheme.ofNayin(p.nayin),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         lineHeight = 13.sp,
@@ -323,23 +327,11 @@ private fun ElementPhaseBar(phases: List<ElementPhase>) {
             ) {
                 Text(
                     text = "${phase.element}${phase.phase}",
-                    color = WuXingColors.ofElement(phase.element),
+                    color = BaziTheme.ofElement(phase.element),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                 )
             }
         }
     }
-}
-
-private fun nayinColor(nayin: String): Color {
-    val wx = when {
-        nayin.endsWith("木") -> "木"
-        nayin.endsWith("火") -> "火"
-        nayin.endsWith("土") -> "土"
-        nayin.endsWith("金") -> "金"
-        nayin.endsWith("水") -> "水"
-        else -> ""
-    }
-    return WuXingColors.ofElement(wx)
 }

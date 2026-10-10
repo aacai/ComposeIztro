@@ -186,6 +186,34 @@ data class IztroColors(
 
 val LocalIztroColors = staticCompositionLocalOf { IztroColors.Light }
 
+/**
+ * 成套命盘主题：lightTheme / darkTheme 可整体替换。
+ *
+ * ```
+ * Iztrolabe(
+ *   colorMode = IztroColorMode.Dark,
+ *   themeConfig = IztroThemeConfig.Default.copy(
+ *     darkTheme = IztroColors.Dark.copy(boardBg = Color(0xFF121212)),
+ *   ),
+ * )
+ * ```
+ */
+data class IztroThemeConfig(
+    val lightTheme: IztroColors = IztroColors.Light,
+    val darkTheme: IztroColors = IztroColors.Dark,
+) {
+    fun colors(mode: IztroColorMode): IztroColors = when (mode) {
+        IztroColorMode.Light -> lightTheme
+        IztroColorMode.Dark -> darkTheme
+    }
+
+    companion object {
+        val Default = IztroThemeConfig()
+    }
+}
+
+val LocalIztroThemeConfig = staticCompositionLocalOf { IztroThemeConfig.Default }
+
 /** 当前色板（须在 [IztroThemeProvider] / [Iztrolabe] 内使用） */
 val IztroTheme: IztroColors
     @Composable
@@ -195,9 +223,12 @@ val IztroTheme: IztroColors
 @Composable
 fun IztroThemeProvider(
     mode: IztroColorMode,
+    config: IztroThemeConfig = IztroThemeConfig.Default,
     content: @Composable () -> Unit,
 ) {
-    CompositionLocalProvider(LocalIztroColors provides IztroColors.forMode(mode)) {
-        content()
-    }
+    CompositionLocalProvider(
+        LocalIztroThemeConfig provides config,
+        LocalIztroColors provides config.colors(mode),
+        content = content,
+    )
 }

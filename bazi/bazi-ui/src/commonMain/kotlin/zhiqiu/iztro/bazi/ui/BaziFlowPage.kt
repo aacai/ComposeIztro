@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,11 +40,16 @@ import zhiqiu.iztro.bazi.original.PillarView
 import zhiqiu.iztro.bazi.original.tenGodAbbrev
 
 private val LabelWidth = 28.dp
-private val LabelColor = Color(0xFF6A6A6A)
-private val SelectedBg = Color(0xFFF2E8DC)
-private val NatalLuckDivider = Color(0xFFD0C8C0)
-private val SectionMuted = Color(0xFF999999)
-private val SoftDivider = Color(0xFFE0D8D0)
+private val LabelColor: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.label
+private val SelectedBg: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.selectedBg
+private val NatalLuckDivider: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.natalLuckDivider
+private val SectionMuted: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.sectionMuted
+private val SoftDivider: Color
+    @Composable @ReadOnlyComposable get() = BaziTheme.softDivider
 /** 大运 / 流年 / 流月单列上限，避免宽屏被拉太开 */
 private val LuckCellMaxWidth = 60.dp
 

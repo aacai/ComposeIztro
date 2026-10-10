@@ -52,6 +52,7 @@ fun Iztrolabe(
     /** null = 内部自管；非 null = 受控，配合 [onColorModeChange] */
     colorMode: IztroColorMode? = null,
     onColorModeChange: ((IztroColorMode) -> Unit)? = null,
+    themeConfig: IztroThemeConfig = IztroThemeConfig.Default,
     modifier: Modifier = Modifier,
 ) {
     Iztrolabe(
@@ -72,6 +73,7 @@ fun Iztrolabe(
             colorMode = colorMode,
         ),
         onColorModeChange = onColorModeChange,
+        themeConfig = themeConfig,
         modifier = modifier,
     )
 }
@@ -80,6 +82,7 @@ fun Iztrolabe(
 fun Iztrolabe(
     props: IztrolabeProps,
     onColorModeChange: ((IztroColorMode) -> Unit)? = null,
+    themeConfig: IztroThemeConfig = IztroThemeConfig.Default,
     modifier: Modifier = Modifier,
 ) {
     var algorithm by remember { mutableStateOf(props.options?.algorithm ?: "default") }
@@ -108,7 +111,7 @@ fun Iztrolabe(
         onColorModeChange?.invoke(mode)
     }
 
-    IztroThemeProvider(mode = resolvedColorMode) {
+    IztroThemeProvider(mode = resolvedColorMode, config = themeConfig) {
         // birthday/birthTime 必须进 key，否则 rememberIztro / 宫位状态可能残留
         key(birthday, birthTime, algorithm, localAstroType) {
             val input = props.copy(birthday = birthday, birthTime = birthTime)
