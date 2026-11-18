@@ -362,15 +362,17 @@ private fun AstrolabeGrid(
             .fillMaxSize()
             .background(IztroTheme.boardBg),
     ) {
-        // 正方形盘：边长 = min(宽, 高)，竖屏手机按宽度定边并垂直居中
-        val boardSide = if (maxWidth < maxHeight) maxWidth else maxHeight
-        val style = rememberAstrolabeStyle(boardSide)
+        // 长方形盘：宽度铺满可用宽度，高度按内容比例给出（外圈行高略大于格子宽度的一半），
+        // 避免正方形盘在窄屏把十二宫挤到内容溢出。
+        val boardWidth = maxWidth
+        val boardHeight = (boardWidth * 1.05f).coerceAtMost(maxHeight)
+        val style = rememberAstrolabeStyle(boardWidth)
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             CompositionLocalProvider(LocalAstrolabeStyle provides style) {
-                Column(Modifier.size(boardSide)) {
+                Column(Modifier.size(width = boardWidth, height = boardHeight)) {
                     Row(Modifier.weight(style.rowWeightOuter).fillMaxWidth()) {
                         listOf(3, 4, 5, 6).forEach { idx ->
                             PalaceSlot(

@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import zhiqiu.app.destiny.oinkcompat.DropdownMenuItem
+import zhiqiu.app.destiny.oinkcompat.ExperimentalMaterial3Api
+import zhiqiu.app.destiny.oinkcompat.ExposedDropdownMenu
+import zhiqiu.app.destiny.oinkcompat.ExposedDropdownMenuBox
+import zhiqiu.app.destiny.oinkcompat.ExposedDropdownMenuDefaults
+import zhiqiu.app.destiny.oinkcompat.menuAnchor
+import zhiqiu.app.destiny.oinkcompat.Text
+import zhiqiu.app.destiny.oinkcompat.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -541,7 +543,7 @@ private fun AlgorithmSelector(
                     .clickable { expanded = true }
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
-            androidx.compose.material3.DropdownMenu(
+            zhiqiu.app.destiny.oinkcompat.DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
             ) {
@@ -608,7 +610,7 @@ private fun AstroTypeSelector(
                     .clickable { expanded = true }
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
-            androidx.compose.material3.DropdownMenu(
+            zhiqiu.app.destiny.oinkcompat.DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
             ) {
