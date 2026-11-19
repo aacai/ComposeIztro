@@ -107,7 +107,7 @@ object Calendar {
         options: StemBranchOptions = StemBranchOptions(),
     ): HeavenlyStemAndEarthlyBranchDate {
         val parts = normalizeDateStr(dateStr)
-        val hour = maxOf(timeIndex * 2 - 1, 0)
+        val hour = (timeIndex * 2 - 1 + 24) % 24
         val solarTime = SolarTime(parts[0], parts[1], parts[2], hour, 30, 0)
         val solarDay = solarTime.getSolarDay()
         val sixtyCycleDay = solarDay.getSixtyCycleDay()
@@ -154,7 +154,7 @@ object Calendar {
 
     private fun findHourlyCycle(sixtyCycleDay: SixtyCycleDay, timeIndex: Int): SixtyCycleHour {
         val hours = sixtyCycleDay.getHours()
-        val targetHour = maxOf(timeIndex * 2 - 1, 0)
+        val targetHour = (timeIndex * 2 - 1 + 24) % 24
         return hours.firstOrNull { it.getSolarTime().hour == targetHour }
             ?: hours[minOf(timeIndex + 1, hours.lastIndex)]
     }

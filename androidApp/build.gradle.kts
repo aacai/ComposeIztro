@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":bazi-ui"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.foundation)
-    implementation(libs.compose.material3)
+    implementation(project(":oink-compat"))
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
@@ -39,7 +39,8 @@ android {
     }
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

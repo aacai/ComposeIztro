@@ -9,7 +9,7 @@ plugins {
 dependencies {
     implementation(project(":shared"))
     implementation(project(":bazi-ui"))
-    implementation(libs.compose.material3)
+    implementation(project(":oink-compat"))
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)

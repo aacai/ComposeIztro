@@ -14,14 +14,16 @@ import zhiqiu.iztro.star.getYearly12
 import zhiqiu.iztro.utils.fixEarthlyBranchIndex
 import zhiqiu.iztro.utils.fixIndex
 import zhiqiu.iztro.utils.getMutagensByHeavenlyStem
+import zhiqiu.iztro.utils.normalizeDayBoundary
 import zhiqiu.iztro.utils.timeToIndex
 
 fun Astrolabe.horoscope(targetSolarDate: String, timeIndex: Int? = null): Horoscope {
     val birthLunar = rawDates.lunarDate
-    val targetLunar = Calendar.solar2lunar(targetSolarDate)
-    val targetTimeIndex = timeIndex ?: timeToIndex(parseHour(targetSolarDate))
+    val requestedTimeIndex = timeIndex ?: timeToIndex(parseHour(targetSolarDate))
+    val (targetDate, targetTimeIndex) = normalizeDayBoundary(targetSolarDate, requestedTimeIndex)
+    val targetLunar = Calendar.solar2lunar(targetDate)
     val stemBranch = Calendar.getHeavenlyStemAndEarthlyBranchBySolarDate(
-        targetSolarDate,
+        targetDate,
         targetTimeIndex,
         StemBranchOptions(year = getConfig().horoscopeDivide, month = getConfig().horoscopeDivide),
     )
@@ -29,10 +31,8 @@ fun Astrolabe.horoscope(targetSolarDate: String, timeIndex: Int? = null): Horosc
     var nominalAge = targetLunar.lunarYear - birthLunar.lunarYear
     var isChildhood = false
     if (getConfig().ageDivide == "birthday") {
-        val addYear = (targetLunar.lunarYear == birthLunar.lunarYear &&
-            targetLunar.lunarMonth == birthLunar.lunarMonth &&
-            targetLunar.lunarDay > birthLunar.lunarDay) ||
-            targetLunar.lunarMonth > birthLunar.lunarMonth
+        val addYear = targetLunar.lunarMonth > birthLunar.lunarMonth ||
+            (targetLunar.lunarMonth == birthLunar.lunarMonth && targetLunar.lunarDay > birthLunar.lunarDay)
         if (addYear) nominalAge += 1
     } else {
         nominalAge += 1
@@ -107,7 +107,7 @@ fun Astrolabe.horoscope(targetSolarDate: String, timeIndex: Int? = null): Horosc
         )
     }
 
-    val yearly12 = getYearly12(targetSolarDate)
+    val yearly12 = getYearly12(targetDate)
     return Horoscope(
         solarDate = normalizeSolarDate(targetSolarDate),
         lunarDate = targetLunar.format(useChinese = true),

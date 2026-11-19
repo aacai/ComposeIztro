@@ -2,10 +2,10 @@ package zhiqiu.iztro
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
+import zhiqiu.app.destiny.oinkcompat.MaterialThemeHost
+import zhiqiu.app.destiny.oinkcompat.Tab
+import zhiqiu.app.destiny.oinkcompat.TabRow
+import zhiqiu.app.destiny.oinkcompat.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -61,7 +61,7 @@ fun BaziDemo(modifier: Modifier = Modifier) {
 fun AppWithTabs() {
     var page by remember { mutableIntStateOf(0) }
 
-    MaterialTheme {
+    MaterialThemeHost(darkTheme = false) {
         Column(modifier = Modifier.fillMaxSize()) {
             TabRow(selectedTabIndex = page) {
                 Tab(selected = page == 0, onClick = { page = 0 }, text = { Text("紫微斗数") })

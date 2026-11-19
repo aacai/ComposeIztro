@@ -339,7 +339,6 @@ project(":bazi-ui").projectDir = file("thirdparty/ComposeIztro/bazi/bazi-ui")
 | composeMultiplatform | 1.11.1 |
 | agp | 9.0.1 |
 | androidx-lifecycle | 2.11.0-beta01 |
-| material3 | 1.11.0-alpha07 |
 | kotlinx-datetime | 0.7.1 |
 | tyme4kt | 1.5.0 |
 

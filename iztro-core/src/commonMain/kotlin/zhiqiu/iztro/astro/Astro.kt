@@ -22,6 +22,7 @@ import zhiqiu.iztro.star.getYearly12
 import zhiqiu.iztro.star.getchangsheng12
 import zhiqiu.iztro.star.gradeBStarNames
 import zhiqiu.iztro.utils.fixIndex
+import zhiqiu.iztro.utils.normalizeDayBoundary
 import zhiqiu.iztro.utils.translateChineseDate
 
 fun bySolar(
@@ -34,27 +35,23 @@ fun bySolar(
     language?.let { setLanguage(it) }
 
     val palaces = mutableListOf<Palace>()
-    val dayDivide = getConfig().dayDivide
-    var tIndex = timeIndex
-    if (dayDivide == "current" && tIndex >= 12) {
-        tIndex = 0
-    }
+    val (chartDate, tIndex) = normalizeDayBoundary(solarDate, timeIndex)
 
     val chineseDateRaw = Calendar.getHeavenlyStemAndEarthlyBranchBySolarDate(
-        solarDate, tIndex,
+        chartDate, tIndex,
         StemBranchOptions(year = getConfig().yearDivide, month = getConfig().horoscopeDivide),
     )
     val earthlyBranchOfYear = kot<String>(chineseDateRaw.yearly.second, "Earthly")
     val heavenlyStemOfYear = kot<String>(chineseDateRaw.yearly.first, "Heavenly")
-    val param = AstrolabeParam(solarDate, tIndex, fixLeap, gender)
+    val param = AstrolabeParam(chartDate, tIndex, fixLeap, gender)
     val soulAndBody = getSoulAndBody(param)
     val palaceNames = getPalaceNames(soulAndBody.soulIndex)
     val majorStars = getMajorStar(param)
-    val minorStars = getMinorStar(solarDate, tIndex, fixLeap)
+    val minorStars = getMinorStar(chartDate, tIndex, fixLeap)
     val adjectiveStars = getAdjectiveStar(param)
     val changsheng12 = getchangsheng12(param)
-    val boshi12 = getBoShi12(solarDate, gender)
-    val yearly12 = getYearly12(solarDate)
+    val boshi12 = getBoShi12(chartDate, gender)
+    val yearly12 = getYearly12(chartDate)
     val horoscope = getHoroscope(param)
 
     // 乙级星提升为辅星（竖排），丙级以下留宫位左下横排杂曜
@@ -90,7 +87,7 @@ fun bySolar(
 
     val earthlyBranchOfSoulPalace = EARTHLY_BRANCHES[fixIndex(soulAndBody.soulIndex + 2)]
     val earthlyBranchOfBodyPalace = t<String>(EARTHLY_BRANCHES[fixIndex(soulAndBody.bodyIndex + 2)])
-    val lunarDateObj = Calendar.solar2lunar(solarDate)
+    val lunarDateObj = Calendar.solar2lunar(chartDate)
 
     val soulStarKey = if (getConfig().algorithm == "zhongzhou") {
         earthlyBranches[earthlyBranchOfYear]!!.soul

@@ -14,6 +14,7 @@ import zhiqiu.iztro.star.getMajorStar
 import zhiqiu.iztro.star.getTianshiTianshangIndex
 import zhiqiu.iztro.star.getchangsheng12
 import zhiqiu.iztro.utils.fixIndex
+import zhiqiu.iztro.utils.normalizeDayBoundary
 
 fun Astrolabe.palace(nameOrIndex: String): Palace? {
     // 对齐 iztro analyzer.getPalace：身宫不是十二宫名，而是 isBodyPalace 标记
@@ -80,15 +81,11 @@ private fun rearrangeAstrolabe(
     from: StemBranchFrom,
     option: Option,
 ): Astrolabe {
-    val dayDivide = getConfig().dayDivide
-    var tIndex = option.timeIndex
-    if (dayDivide == "current" && tIndex >= 12) {
-        tIndex = 0
-    }
+    val (chartDate, tIndex) = normalizeDayBoundary(astrolabe.solarDate, option.timeIndex)
 
     val genderKey = kot<String>(astrolabe.gender)
     val param = AstrolabeParam(
-        solarDate = astrolabe.solarDate,
+        solarDate = chartDate,
         timeIndex = tIndex,
         fixLeap = option.fixLeap,
         gender = genderKey,
@@ -140,5 +137,6 @@ private fun rearrangeAstrolabe(
         fiveElementsClass = fiveElementsClass,
         palaces = updatedPalaces,
         earthlyBranchOfSoulPalace = t(EARTHLY_BRANCHES[fixIndex(soulIndex + 2)]),
+        earthlyBranchOfBodyPalace = t(EARTHLY_BRANCHES[fixIndex(bodyIndex + 2)]),
     )
 }

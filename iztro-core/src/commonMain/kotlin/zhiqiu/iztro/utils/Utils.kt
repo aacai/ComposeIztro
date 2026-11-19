@@ -1,5 +1,6 @@
 package zhiqiu.iztro.utils
 
+import com.tyme.solar.SolarDay
 import zhiqiu.iztro.astro.getConfig
 import zhiqiu.iztro.calendar.Calendar
 import zhiqiu.iztro.calendar.HeavenlyStemAndEarthlyBranchDate
@@ -57,10 +58,20 @@ private val shortEarthlyBranchMap = mapOf(
     "wei" to "weiEarthly", "shen" to "shenEarthly", "you" to "youEarthly", "xu" to "xuEarthly", "hai" to "haiEarthly",
 )
 
+fun normalizeDayBoundary(dateStr: String, timeIndex: Int): Pair<String, Int> {
+    if (timeIndex != 12) return dateStr to timeIndex
+    if (getConfig().dayDivide == "current") return dateStr to 0
+    val parts = Calendar.normalizeDateStr(dateStr)
+    val next = SolarDay.fromYmd(parts[0], parts[1], parts[2]).next(1)
+    val nextDate = "${next.year}-${next.month}-${next.day}"
+    return nextDate to 0
+}
+
 fun fixLunarMonthIndex(solarDateStr: String, timeIndex: Int, fixLeap: Boolean = false): Int {
-    val lunar = Calendar.solar2lunar(solarDateStr)
+    val (date, _) = normalizeDayBoundary(solarDateStr, timeIndex)
+    val lunar = Calendar.solar2lunar(date)
     val firstIndex = EARTHLY_BRANCHES.indexOf("yinEarthly")
-    val needToAdd = lunar.isLeap && fixLeap && lunar.lunarDay > 15 && timeIndex != 12
+    val needToAdd = lunar.isLeap && fixLeap && lunar.lunarDay > 15
     return fixIndex(lunar.lunarMonth + 1 - firstIndex + if (needToAdd) 1 else 0)
 }
 

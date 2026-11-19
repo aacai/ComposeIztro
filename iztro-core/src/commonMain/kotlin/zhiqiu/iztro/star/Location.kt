@@ -16,6 +16,7 @@ import zhiqiu.iztro.utils.fixEarthlyBranchIndex
 import zhiqiu.iztro.utils.fixIndex
 import zhiqiu.iztro.utils.fixLunarDayIndex
 import zhiqiu.iztro.utils.fixLunarMonthIndex
+import zhiqiu.iztro.utils.normalizeDayBoundary
 import kotlin.math.floor
 
 /**
@@ -27,8 +28,7 @@ import kotlin.math.floor
  * - 日数小於局，还直宫中守。
  */
 fun getStartIndex(param: AstrolabeParam): StartIndexResult {
-    val solarDate = param.solarDate
-    val timeIndex = param.timeIndex
+    val (solarDate, timeIndex) = normalizeDayBoundary(param.solarDate, param.timeIndex)
     val fixLeap = param.fixLeap
     val from = param.from
 
@@ -47,12 +47,7 @@ fun getStartIndex(param: AstrolabeParam): StartIndexResult {
     var quotient = 0
     var offset = -1
 
-    val maxDays = Calendar.getTotalDaysOfLunarMonth(solarDate)
-    var day = if (timeIndex == 12 && getConfig().dayDivide != "current") lunarDay + 1 else lunarDay
-
-    if (day > maxDays) {
-        day -= maxDays
-    }
+    var day = lunarDay
 
     do {
         offset++
@@ -171,12 +166,13 @@ fun getDailyStarIndex(
     timeIndex: Int,
     fixLeap: Boolean? = null,
 ): DailyStarIndexResult {
-    val lunarDay = Calendar.solar2lunar(solarDateStr).lunarDay
-    val monthIndex = fixLunarMonthIndex(solarDateStr, timeIndex, fixLeap ?: false)
+    val (solarDate, tIndex) = normalizeDayBoundary(solarDateStr, timeIndex)
+    val lunarDay = Calendar.solar2lunar(solarDate).lunarDay
+    val monthIndex = fixLunarMonthIndex(solarDate, tIndex, fixLeap ?: false)
 
     val zuoYou = getZuoYouIndex(monthIndex + 1)
-    val changQu = getChangQuIndex(timeIndex)
-    val dayIndex = fixLunarDayIndex(lunarDay, timeIndex)
+    val changQu = getChangQuIndex(tIndex)
+    val dayIndex = fixLunarDayIndex(lunarDay, tIndex)
 
     return DailyStarIndexResult(
         santaiIndex = fixIndex((zuoYou.zuoIndex + dayIndex) % 12),

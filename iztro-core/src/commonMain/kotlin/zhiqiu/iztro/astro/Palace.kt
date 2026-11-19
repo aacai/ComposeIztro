@@ -38,9 +38,8 @@ fun getSoulAndBody(param: AstrolabeParam): SoulAndBody {
     var bodyIndex = fixIndex(monthIndex + EARTHLY_BRANCHES.indexOf(earthlyBranchOfTime))
 
     if (from != null) {
+        // 地盘、人盘只以传入地支为命宫；身宫仍按出生农历月与时辰安放，不随命宫平移。
         soulIndex = fixEarthlyBranchIndex(from.earthlyBranch)
-        val bodyOffset = listOf(0, 2, 4, 6, 8, 10, 0, 2, 4, 6, 8, 10, 0)
-        bodyIndex = fixIndex(bodyOffset[timeIndex] + soulIndex)
     }
 
     val startHeavenlyStem = TIGER_RULE[heavenlyStemOfYear]!!
