@@ -94,8 +94,8 @@ fun IzpalaceCenter(
     val canDayPlus = birthDate.isBefore(maxDate)
     val canHourMinus = chart.timeIndex > 0
     val canHourPlus = chart.timeIndex < 11
-    val gap = if (style.compact) 2.dp else 4.dp
-    val pad = if (style.compact) 4.dp else 6.dp
+    val gap = if (style.compact) 1.dp else 3.dp
+    val pad = if (style.compact) 3.dp else 5.dp
     val nominalAge = horoscope?.age?.nominalAge
     val decadalPalaceName = horoscope?.decadal?.let { d ->
         chart.palaces.getOrNull(d.index)?.name
@@ -260,13 +260,6 @@ fun IzpalaceCenter(
                 }
             }
         }
-
-        Text(
-            text = chart.copyright.ifEmpty { "Powered by iztro" },
-            fontSize = 7.sp,
-            color = IztroTheme.focus.copy(alpha = 0.2f),
-            modifier = Modifier.align(Alignment.BottomEnd).padding(1.dp),
-        )
     }
 }
 

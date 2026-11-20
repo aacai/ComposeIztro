@@ -71,8 +71,8 @@ fun Izstar(
     val hoverBarColor = hoverMutagenIndex?.let { theme.selfMutagenBgs[it] }
     val barHeight = 3.dp
     val density = LocalDensity.current
-    // 竖排星曜（主星/辅星）名字统一字号；仅横向杂曜保持较小字号；竖排过多时按 scale 缩小
-    val nameSize = if (horizontal) style.adjStarSp else style.majorStarSp * nameSizeScale
+    // 主星/辅星/杂曜均吃 nameSizeScale（运限星占位时临时缩小本命字）
+    val nameSize = (if (horizontal) style.adjStarSp else style.majorStarSp) * nameSizeScale
     val nameLineHeight = nameSize * 1.15f
     val brightSize = style.brightSp * nameSizeScale
     val brightLineHeight = brightSize * 1.2f

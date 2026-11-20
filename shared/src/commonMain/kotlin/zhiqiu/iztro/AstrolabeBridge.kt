@@ -19,6 +19,20 @@ import zhiqiu.iztro.utils.fixEarthlyBranchIndex
 import zhiqiu.iztro.utils.getMutagensByHeavenlyStem
 
 internal object AstrolabeBridge {
+    /** 本命盘缓存：运限只调 [Astrolabe.horoscope]，避免每次再整盘 bySolar/withOptions */
+    @Volatile private var cachedNatal: zhiqiu.iztro.model.Astrolabe? = null
+    @Volatile private var cachedNatalKey: String? = null
+
+    private fun natalKey(
+        solarDate: String,
+        timeIndex: Int,
+        gender: String,
+        lang: String,
+        algorithm: String?,
+        astroType: String?,
+        fixLeap: Boolean,
+    ): String = "$solarDate|$timeIndex|$gender|$lang|$algorithm|$astroType|$fixLeap"
+
     fun createDemoChart(input: IztroInput): DemoChart {
         val option = Option(
             type = input.birthdayType,
@@ -31,11 +45,43 @@ internal object AstrolabeBridge {
             config = input.options?.toCoreConfig(),
             astroType = input.astroType,
         )
-        return withOptions(option).toDemoChart(input.lang, input.name)
+        val astrolabe = withOptions(option)
+        cachedNatal = astrolabe
+        cachedNatalKey = natalKey(
+            solarDate = astrolabe.solarDate,
+            timeIndex = astrolabe.timeIndex,
+            gender = astrolabe.gender,
+            lang = input.lang,
+            algorithm = input.options?.algorithm,
+            astroType = input.astroType,
+            fixLeap = input.fixLeap,
+        )
+        return astrolabe.toDemoChart(input.lang, input.name)
     }
 
     fun computeHoroscope(chart: DemoChart, targetDate: String, horoscopeHour: Int): DemoHoroscope {
-        val astrolabe = bySolar(chart.solarDate, chart.timeIndex, chart.gender, fixLeap = true, chart.lang)
+        val key = natalKey(
+            solarDate = chart.solarDate,
+            timeIndex = chart.timeIndex,
+            gender = chart.gender,
+            lang = chart.lang,
+            algorithm = null,
+            astroType = null,
+            fixLeap = true,
+        )
+        // 优先命中 createDemoChart 写入的缓存（含 algorithm/astroType）；键不完全一致时按本命字段宽松匹配
+        val cached = cachedNatal
+        val astrolabe = when {
+            cached != null && cachedNatalKey == key -> cached
+            cached != null &&
+                cached.solarDate == chart.solarDate &&
+                cached.timeIndex == chart.timeIndex &&
+                cached.gender == chart.gender -> cached
+            else -> bySolar(chart.solarDate, chart.timeIndex, chart.gender, fixLeap = true, chart.lang).also {
+                cachedNatal = it
+                cachedNatalKey = key
+            }
+        }
         return astrolabe.horoscope(targetDate, horoscopeHour).toDemoHoroscope()
     }
 

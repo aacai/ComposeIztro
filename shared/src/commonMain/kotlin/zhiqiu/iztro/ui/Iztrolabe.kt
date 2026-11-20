@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import zhiqiu.app.destiny.oinkcompat.Text
 import zhiqiu.iztro.Algorithm
 import zhiqiu.iztro.AstroType
 import zhiqiu.iztro.DemoChart
@@ -168,6 +169,12 @@ private fun IztrolabeContent(
     modifier: Modifier = Modifier,
 ) {
     val iztro = rememberIztro(input, props.horoscopeDate, props.horoscopeHour)
+    if (iztro == null) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(text = "排盘中…", color = IztroTheme.textMuted)
+        }
+        return
+    }
 
     AstrolabeGrid(
         chart = iztro.chart,
@@ -281,6 +288,33 @@ private fun AstrolabeGrid(
         }
     }
 
+    /** 底部时间轴点选：只打开到目标层，关掉更深层级 */
+    fun activateScope(scope: String) {
+        when (scope) {
+            "decadal" -> {
+                showDecadal = true
+                showYearly = false
+                showMonthly = false
+                showDaily = false
+                showHourly = false
+            }
+            "yearly" -> {
+                showDecadal = true
+                showYearly = true
+                showMonthly = false
+                showDaily = false
+                showHourly = false
+            }
+            "monthly" -> {
+                showDecadal = true
+                showYearly = true
+                showMonthly = true
+                showDaily = false
+                showHourly = false
+            }
+        }
+    }
+
     // 运限层层递进：打开某层则激活其前序；关闭某层则关掉其后所有更深层级
     fun toggleScope(scope: String) {
         when (scope) {
@@ -357,15 +391,19 @@ private fun AstrolabeGrid(
         hoveredIndex = index
     }
 
-    BoxWithConstraints(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .background(IztroTheme.boardBg),
     ) {
-        // 长方形盘：宽度铺满可用宽度，高度按内容比例给出（外圈行高略大于格子宽度的一半），
-        // 避免正方形盘在窄屏把十二宫挤到内容溢出。
+    BoxWithConstraints(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth(),
+    ) {
+        // 中宫/三运已收矮，盘面略收比例，高度更多落到十二宫；字号走 AstrolabeStyle。
         val boardWidth = maxWidth
-        val boardHeight = (boardWidth * 1.05f).coerceAtMost(maxHeight)
+        val boardHeight = maxHeight.coerceAtMost(boardWidth * 1.48f)
         val style = rememberAstrolabeStyle(boardWidth)
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -465,6 +503,28 @@ private fun AstrolabeGrid(
                 }
             }
         }
+    }
+    HoroscopeTimeline(
+        chart = chart,
+        horoscope = horoscope,
+        horoscopeDate = horoscopeDate,
+        showDecadal = showDecadal,
+        showYearly = showYearly,
+        showMonthly = showMonthly,
+        onSelectDecadal = { _, date ->
+            onSetHoroscopeDate(date)
+            activateScope("decadal")
+        },
+        onSelectYear = { date ->
+            onSetHoroscopeDate(date)
+            activateScope("yearly")
+        },
+        onSelectMonth = { date ->
+            onSetHoroscopeDate(date)
+            activateScope("monthly")
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
     }
 }
 

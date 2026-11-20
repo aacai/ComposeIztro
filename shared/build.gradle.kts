@@ -52,6 +52,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":iztro-core"))
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(project(":oink-compat"))
