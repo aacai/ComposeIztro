@@ -71,11 +71,16 @@ fun Izstar(
     val hoverBarColor = hoverMutagenIndex?.let { theme.selfMutagenBgs[it] }
     val barHeight = 3.dp
     val density = LocalDensity.current
-    // 主星/辅星/杂曜均吃 nameSizeScale（运限星占位时临时缩小本命字）
-    val nameSize = (if (horizontal) style.adjStarSp else style.majorStarSp) * nameSizeScale
-    val nameLineHeight = nameSize * 1.15f
+    // 主星略大、辅星/乙级用 minor；均吃 nameSizeScale（多列宫如父母宫靠它收宽度）
+    val baseNameSp = when {
+        horizontal -> style.adjStarSp
+        star.type == "major" -> style.majorStarSp
+        else -> style.minorStarSp
+    }
+    val nameSize = baseNameSp * nameSizeScale
+    val nameLineHeight = nameSize * 1.08f
     val brightSize = style.brightSp * nameSizeScale
-    val brightLineHeight = brightSize * 1.2f
+    val brightLineHeight = brightSize * 1.1f
     val nameWeight = if (star.type == "major") FontWeight.Bold else FontWeight.SemiBold
     val brightColor = theme.focus
     val scopeBadgeCount = horoscopeMutagens.count { item ->

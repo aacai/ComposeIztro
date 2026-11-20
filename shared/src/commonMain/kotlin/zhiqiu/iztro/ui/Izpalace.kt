@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import zhiqiu.iztro.DemoHoroscope
@@ -129,10 +130,6 @@ fun Izpalace(
     } else emptyList()
     val horoStarCount = decadalStars.size + yearlyStars.size
     val hasHoroStars = horoStarCount > 0
-    val starColCount = palace.majorStars.size + palace.minorStars.size
-    val scopeLabelCount = listOf(showDecadal, showYearly, showMonthly, showDaily, showHourly)
-        .count { it }
-
     BoxWithConstraints(
         modifier = modifier
             .clip(RoundedCornerShape(style.cellCorner))
@@ -142,52 +139,49 @@ fun Izpalace(
             .clickable { onClickPalace(palace.index) }
             .padding(style.cellPad),
     ) {
-        // 按本宫实际高度疏密弹性缩放：空宫可略放大，挤宫才收；范围约 0.55~1.15
-        val densityScale = remember(
-            maxHeight, starColCount, horoStarCount, scopeLabelCount,
-            style.majorStarSp, style.brightSp, style.palaceNameSp, style.ageSp, style.stemBranchSp, style.horoStarSp,
-        ) {
-            computePalaceDensityScale(
-                cellHeightDp = maxHeight.value,
-                starColumns = starColCount,
-                horoStarCount = horoStarCount,
-                scopeLabelCount = scopeLabelCount,
-                style = style,
-            )
-        }
-        val nameSizeScale = densityScale
-        val footerScale = densityScale
-
+        val cellContentWidth = maxWidth
         // 主星区可滚动；footer 钉在最底；小限由 PalaceLayout 按剩余空白自动落位
+        // 星曜：实测整行宽后按可用宽整体缩放（含运星/gap/padding）
         PalaceLayout(
             modifier = Modifier.fillMaxSize(),
             stars = {
-                Box(Modifier.verticalScroll(rememberScrollState())) {
-                    Row(
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    contentAlignment = Alignment.TopStart,
+                ) {
+                    StarFitRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(1.dp),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        palace.majorStars.forEach { star ->
-                            PalaceStar(
-                                star, palace.heavenlyStem, activeHeavenlyStem,
-                                hoverHeavenlyStem, horoscopeMutagens, nameSizeScale,
-                            )
-                        }
-                        palace.minorStars.forEach { star ->
-                            PalaceStar(
-                                star, palace.heavenlyStem, activeHeavenlyStem,
-                                hoverHeavenlyStem, horoscopeMutagens, nameSizeScale,
-                            )
-                        }
-                        if (hasHoroStars) {
-                            FlowRow(
-                                modifier = Modifier.padding(start = 3.dp),
-                                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                verticalArrangement = Arrangement.spacedBy(1.dp),
-                            ) {
-                                decadalStars.forEach { HoroStar(it, IztroTheme.active, densityScale) }
-                                yearlyStars.forEach { HoroStar(it, IztroTheme.decorator2, densityScale) }
+                        availableWidth = cellContentWidth,
+                        edgePad = 4.dp,
+                    ) { starScale ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(1.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            palace.majorStars.forEach { star ->
+                                PalaceStar(
+                                    star, palace.heavenlyStem, activeHeavenlyStem,
+                                    hoverHeavenlyStem, horoscopeMutagens, starScale,
+                                )
+                            }
+                            palace.minorStars.forEach { star ->
+                                PalaceStar(
+                                    star, palace.heavenlyStem, activeHeavenlyStem,
+                                    hoverHeavenlyStem, horoscopeMutagens, starScale,
+                                )
+                            }
+                            if (hasHoroStars) {
+                                FlowRow(
+                                    modifier = Modifier.padding(start = 3.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                                    maxItemsInEachRow = 3,
+                                ) {
+                                    decadalStars.forEach { HoroStar(it, IztroTheme.active, starScale) }
+                                    yearlyStars.forEach { HoroStar(it, IztroTheme.decorator2, starScale) }
+                                }
                             }
                         }
                     }
@@ -198,15 +192,17 @@ fun Izpalace(
                     palace = palace,
                     horoscopeNames = horoscopeNames,
                     narrow = narrow,
-                    contentScale = footerScale,
+                    contentScale = 1f,
                     onToggleScope = onToggleScope,
                 )
             },
             footer = {
-                val ageSp = style.ageSp * footerScale
-                val palaceNameSp = style.palaceNameSp * footerScale
-                val stemSp = style.stemBranchSp * footerScale
-                val decorSp = 11.sp * footerScale
+                // 身份信息固定：宫名、干支、长生；杂曜略跟星区疏密，但仍不放大
+                val palaceNameSp = style.palaceNameSp
+                val stemSp = style.stemBranchSp
+                val ageSp = style.ageSp
+                val decorSp = 11.sp
+                val adjScale = 1f
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -223,7 +219,7 @@ fun Izpalace(
                         ) {
                             palace.adjectiveStars.chunked(maxPerCol).forEach { col ->
                                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                                    col.forEach { AdjStar(it, nameSizeScale = footerScale) }
+                                    col.forEach { AdjStar(it, nameSizeScale = adjScale) }
                                 }
                             }
                         }
@@ -253,7 +249,7 @@ fun Izpalace(
                     // 运限动态宫名改挂在中央宫名旁，这里不再横排全称（避免迁移等挤乱左下）
                 }
 
-                // 中：大限年龄 + 运限宫名横排（多开时不再竖堆挤掉本命宫名）+ 本命宫名
+                // 中：大限年龄 + 运限宫名横排 + 本命宫名（宫名固定字号）
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(horizontal = 2.dp),
@@ -294,11 +290,11 @@ fun Izpalace(
                             }
                         }
                     }
-                    // 多运限同时开时再压一档，避免午这类「年命+运父+月仆」竖爆
+                    // 运限宫名略小于本命宫名，多开时再收一点，但不跟星曜密度乱跳
                     val scopeNameScale = when {
-                        scopeNames.size >= 3 -> footerScale * 0.82f
-                        scopeNames.size >= 2 -> footerScale * 0.9f
-                        else -> footerScale
+                        scopeNames.size >= 3 -> 0.82f
+                        scopeNames.size >= 2 -> 0.9f
+                        else -> 0.95f
                     }
                     if (scopeNames.isNotEmpty()) {
                         FlowRow(
@@ -332,7 +328,7 @@ fun Izpalace(
                     }
                 }
 
-                // 右：十二长生固定在天干上方（不受 compact 隐藏 decor 影响），其下干支
+                // 右：干支固定字号（如 庚 / 子）；长生随 decor，compact 隐藏减轻右下角
                 Column(
                     horizontalAlignment = Alignment.End,
                     modifier = Modifier
@@ -340,25 +336,27 @@ fun Izpalace(
                         .hoverable(stemInteraction)
                         .clickable { onToggleFlyStar(palace.heavenlyStem) },
                 ) {
-                    Text(
-                        text = palace.changsheng12,
-                        fontSize = decorSp,
-                        color = IztroTheme.decorator1,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = decorSp * 1.1f,
-                    )
+                    if (style.showPalaceDecor) {
+                        Text(
+                            text = palace.changsheng12,
+                            fontSize = decorSp,
+                            color = IztroTheme.decorator1,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = decorSp * 1.1f,
+                        )
+                    }
                     Text(
                         text = palace.heavenlyStem,
                         fontSize = stemSp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = IztroTheme.nice,
                         lineHeight = stemSp * 1.1f,
                     )
                     Text(
                         text = palace.earthlyBranch,
                         fontSize = stemSp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = IztroTheme.nice,
                         lineHeight = stemSp * 1.1f,
                     )
@@ -514,8 +512,8 @@ private fun AdjStar(star: DemoStar, nameSizeScale: Float = 1f) {
 @Composable
 private fun HoroStar(star: DemoStar, color: Color, densityScale: Float = 1f) {
     val style = LocalAstrolabeStyle.current
-    // 运星统一小号，明显小于主星；随宫内 densityScale 一起弹性缩放
-    val size = style.horoStarSp * densityScale.coerceIn(0.7f, 1.1f)
+    // 运星统一小号；与主/辅共用 fit scale，不再单独抬下限以免撑宽
+    val size = style.horoStarSp * densityScale.coerceIn(0.5f, 1f)
     val nameColor = when (star.type) {
         "lucun", "tough" -> IztroTheme.awesome
         "tianma", "helper" -> IztroTheme.active
@@ -533,44 +531,54 @@ private fun HoroStar(star: DemoStar, color: Color, densityScale: Float = 1f) {
 }
 
 /**
- * 按宫格实际高度估算内容需求，得到弹性字号系数。
- * - 空宫/星少：可略大于 1（更易读）
- * - 星列多、运星多、运限标签多：平滑缩小，避免叠字
+ * 按真实测得的星曜行宽（主/辅列 + 运星块 + gap）相对可用宽动态缩放字号。
+ * 内容始终贴左；右侧留 edgePad 防裁切。只缩不放。
  */
-private fun computePalaceDensityScale(
-    cellHeightDp: Float,
-    starColumns: Int,
-    horoStarCount: Int,
-    scopeLabelCount: Int,
-    style: AstrolabeStyle,
-): Float {
-    if (cellHeightDp <= 1f) return 1f
-    val name = style.majorStarSp.value
-    val bright = style.brightSp.value
-    // 竖列主星：星名+亮度；运限角标略加高
-    val badgeExtra = if (scopeLabelCount > 0) 9f else 5f
-    val oneColH = (name + bright) * 1.12f + badgeExtra
-    // 运星在旁侧 Flow，按约每 3 颗折一行
-    val horoRows = if (horoStarCount <= 0) 0f else {
-        ((horoStarCount + 2) / 3f) * style.horoStarSp.value * 1.25f
+@Composable
+private fun StarFitRow(
+    modifier: Modifier = Modifier,
+    availableWidth: Dp,
+    edgePad: Dp = 4.dp,
+    minScale: Float = 0.48f,
+    content: @Composable (scale: Float) -> Unit,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val availPx = availableWidth.roundToPx()
+        val maxW = if (constraints.hasBoundedWidth) {
+            constraints.maxWidth
+        } else {
+            availPx
+        }.coerceAtLeast(0)
+        if (maxW <= 0) {
+            return@SubcomposeLayout layout(0, 0) {}
+        }
+        // 贴左：左边不空，只在右侧留边距给末列（如阴煞）
+        val usableW = (maxW - edgePad.roundToPx()).coerceAtLeast(1)
+        val looseH = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
+        val loose = Constraints(0, Constraints.Infinity, 0, looseH)
+
+        fun measureAt(slot: Any, scale: Float) =
+            subcompose(slot) { content(scale) }.first().measure(loose)
+
+        val probe = measureAt(StarFitSlot.Probe, 1f)
+        var scale = when {
+            probe.width <= 0 -> 1f
+            probe.width <= usableW -> 1f
+            else -> (usableW.toFloat() / probe.width.toFloat()).coerceIn(minScale, 1f)
+        }
+        var placeable = measureAt(StarFitSlot.Fit, scale)
+        if (placeable.width > usableW && scale > minScale) {
+            scale = (scale * usableW.toFloat() / placeable.width.toFloat()).coerceIn(minScale, 1f)
+            placeable = measureAt(StarFitSlot.Fit2, scale)
+        }
+        // 占满宫格宽，星曜从 x=0 贴左排，避免缩完后看起来居中
+        layout(maxW, placeable.height) {
+            placeable.place(0, 0)
+        }
     }
-    val starArea = maxOf(oneColH, horoRows)
-    // 星列越多横向越挤，等效略抬高需求（亮度/小限更易撞）
-    val columnPressure = 1f + ((starColumns - 2).coerceAtLeast(0)) * 0.06f
-    val ages = style.ageSp.value * 1.15f
-    // 运限宫名已横排，多开时最多再叠约一行
-    val scopeNameH = when {
-        scopeLabelCount >= 3 -> style.palaceNameSp.value * 1.1f
-        scopeLabelCount >= 1 -> style.palaceNameSp.value * 0.85f
-        else -> 0f
-    }
-    val footer = style.ageSp.value + scopeNameH + style.palaceNameSp.value +
-        style.stemBranchSp.value * 1.6f
-    val needed = (starArea * columnPressure) + ages + footer + 10f
-    val room = cellHeightDp * 0.94f
-    // 空则放大、挤则缩小；下限保证仍可读
-    return (room / needed).coerceIn(0.55f, 1.15f)
 }
+
+private enum class StarFitSlot { Probe, Fit, Fit2 }
 
 @Composable
 private fun DynamicPalaceName(text: String, color: Color, scale: Float = 1f) {

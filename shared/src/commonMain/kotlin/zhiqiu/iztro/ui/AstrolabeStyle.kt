@@ -49,8 +49,9 @@ data class AstrolabeStyle(
             brightSp = 12.sp,
             adjStarSp = 12.sp,
             horoStarSp = 9.sp,
-            palaceNameSp = 14.sp,
-            stemBranchSp = 15.sp,
+            // 身份锚点：固定、略收；宫名略大于干支，避免右下角抢主星
+            palaceNameSp = 13.sp,
+            stemBranchSp = 12.sp,
             ageSp = 12.sp,
             centerTitleSp = 14.sp,
             centerBodySp = 12.sp,
@@ -71,8 +72,9 @@ data class AstrolabeStyle(
             brightSp = 11.sp,
             adjStarSp = 10.sp,
             horoStarSp = 8.sp,
-            palaceNameSp = 12.sp,
-            stemBranchSp = 13.sp,
+            // 身份锚点：固定不放大；宫名略大于干支，右下角更轻
+            palaceNameSp = 11.sp,
+            stemBranchSp = 10.sp,
             ageSp = 10.sp,
             centerTitleSp = 13.sp,
             centerBodySp = 11.sp,
