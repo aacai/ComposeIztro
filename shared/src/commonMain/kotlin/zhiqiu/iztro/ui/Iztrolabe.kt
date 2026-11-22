@@ -118,24 +118,25 @@ fun Iztrolabe(
     }
 
     IztroThemeProvider(mode = resolvedColorMode, config = themeConfig) {
-        // birthday/birthTime 必须进 key，否则 rememberIztro / 宫位状态可能残留
-        key(birthday, birthTime, algorithm, localAstroType) {
-            val input = props.copy(birthday = birthday, birthTime = birthTime)
+        // 不再用 key 强制整棵子树销毁重建：rememberIztro 内部按 input 重算，
+        // 宫位状态（hover/scope）沿用即可，换盘时保留旧盘直到新盘就绪，避免闪一下。
+        val input = remember(props, birthday, birthTime, algorithm, localAstroType) {
+            props.copy(birthday = birthday, birthTime = birthTime)
                 .toInput(algorithm, localAstroType)
-            IztrolabeContent(
-                input = input,
-                props = props,
-                algorithm = algorithm,
-                astroType = localAstroType,
-                onAlgorithmChange = { algorithm = it },
-                onAstroTypeChange = { localAstroType = it },
-                onBirthdayChange = { birthday = it },
-                onBirthTimeChange = { birthTime = it },
-                colorMode = resolvedColorMode,
-                onToggleColorMode = { setColorMode(resolvedColorMode.toggle()) },
-                modifier = modifier,
-            )
         }
+        IztrolabeContent(
+            input = input,
+            props = props,
+            algorithm = algorithm,
+            astroType = localAstroType,
+            onAlgorithmChange = { algorithm = it },
+            onAstroTypeChange = { localAstroType = it },
+            onBirthdayChange = { birthday = it },
+            onBirthTimeChange = { birthTime = it },
+            colorMode = resolvedColorMode,
+            onToggleColorMode = { setColorMode(resolvedColorMode.toggle()) },
+            modifier = modifier,
+        )
     }
 }
 
@@ -400,17 +401,17 @@ private fun AstrolabeGrid(
         hoveredIndex = index
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .background(IztroTheme.boardBg),
-    ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        // 盘面按宽度定高，整体放进可上下滚动的列，底部运限/日运 section 不再挤压盘面
+    BoxWithConstraints(modifier = modifier.fillMaxSize().background(IztroTheme.boardBg)) {
+        // 盘面按宽度定高，但不超过可用高度（给底部运限/日运 section 留出空间），
+        // 避免大屏或窄高屏上盘面被拉满整屏。
         val boardWidth = maxWidth
-        val boardHeight = boardWidth * 1.48f
+        val boardHeight = (boardWidth * 1.48f).coerceAtMost(maxHeight - 190.dp)
         val style = rememberAstrolabeStyle(boardWidth)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+        ) {
         Box(
             modifier = Modifier.fillMaxWidth().height(boardHeight),
             contentAlignment = Alignment.Center,
@@ -509,8 +510,7 @@ private fun AstrolabeGrid(
                 }
             }
         }
-    }
-    HoroscopeTimeline(
+        HoroscopeTimeline(
         chart = chart,
         horoscope = horoscope,
         horoscopeDate = horoscopeDate,
@@ -532,6 +532,7 @@ private fun AstrolabeGrid(
         onSetHoroscopeDate = onSetHoroscopeDate,
         modifier = Modifier.fillMaxWidth(),
     )
+        }
     }
 }
 

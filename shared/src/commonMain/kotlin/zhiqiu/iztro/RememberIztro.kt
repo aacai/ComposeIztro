@@ -34,17 +34,18 @@ fun rememberIztro(input: IztroInput, initialHoroscopeDate: String? = null, initi
         mutableIntStateOf(initialHoroscopeHour ?: 0)
     }
 
-    LaunchedEffect(Unit) {
-        chart = null
-        horoscope = null
-        chart = withContext(Dispatchers.Default) { createDemoChart(input) }
+    LaunchedEffect(input) {
+        // 不提前清空：新盘算好前继续显示旧盘，避免「排盘中…」与整盘之间的一次跳变
+        val natal = withContext(Dispatchers.Default) { createDemoChart(input) }
+        chart = natal
     }
 
     LaunchedEffect(horoscopeDate, horoscopeHour, chart) {
         val natal = chart ?: return@LaunchedEffect
-        horoscope = withContext(Dispatchers.Default) {
+        val next = withContext(Dispatchers.Default) {
             computeHoroscope(natal, horoscopeDate, horoscopeHour)
         }
+        horoscope = next
     }
 
     val natal = chart
