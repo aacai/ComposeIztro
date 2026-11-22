@@ -420,6 +420,8 @@ fun getYearlyStarIndex(param: AstrolabeParam): YearlyStarIndexResult {
     if (yinyang != xunkongIndex % 2) {
         xunkongIndex = fixIndex(xunkongIndex + 1)
     }
+    // 旬空恒为相邻两支（一阳一阴）：阳空取与年支同阴阳者，副旬空取另一支
+    val xunkongAdjIndex = if (xunkongIndex % 2 == 0) fixIndex(xunkongIndex + 1) else fixIndex(xunkongIndex - 1)
 
     val jiekongIndex = if (yinyang == 0) jieluIndex else kongwangIndex
     val jieshaAdjIndex = getJieshaAdjIndex(earthlyBranch)
@@ -455,6 +457,7 @@ fun getYearlyStarIndex(param: AstrolabeParam): YearlyStarIndexResult {
         jieshaAdjIndex = jieshaAdjIndex,
         nianjieIndex = nianjieIndex,
         dahaoAdjIndex = dahaoAdjIndex,
+        xunkongAdjIndex = xunkongAdjIndex,
     )
 }
 
@@ -696,4 +699,5 @@ data class YearlyStarIndexResult(
     val jieshaAdjIndex: Int,
     val nianjieIndex: Int,
     val dahaoAdjIndex: Int,
+    val xunkongAdjIndex: Int,
 )

@@ -11,6 +11,7 @@ import zhiqiu.iztro.model.AstrolabeParam
 import zhiqiu.iztro.model.Star
 import zhiqiu.iztro.utils.fixEarthlyBranchIndex
 import zhiqiu.iztro.utils.fixIndex
+import zhiqiu.iztro.utils.getBrightness
 
 fun getAdjectiveStar(param: AstrolabeParam): List<List<Star>> {
     val solarDate = param.solarDate
@@ -29,7 +30,8 @@ fun getAdjectiveStar(param: AstrolabeParam): List<List<Star>> {
     val suiqian12 = getYearly12(solarDate).suiqian12
 
     fun add(idx: Int, key: String, type: String) {
-        stars[idx].add(Star(t(key), type, "origin"))
+        val name = t<String>(key)
+        stars[idx].add(Star(name, type, "origin", brightness = getBrightness(name, idx)))
     }
 
     // 红鸾天喜三台八座已移入 minorStars（竖排展示）
@@ -54,17 +56,19 @@ fun getAdjectiveStar(param: AstrolabeParam): List<List<Star>> {
     add(yearlyIndex.yuedeIndex, "yuede", "adjective")
     add(yearlyIndex.tiankongIndex, "tiankong", "adjective")
     add(yearlyIndex.xunkongIndex, "xunkong", "adjective")
+    add(yearlyIndex.xunkongAdjIndex, "fuxunkong", "adjective")
 
     if (algorithm != "zhongzhou") {
         add(yearlyIndex.jieluIndex, "jielu", "adjective")
         add(yearlyIndex.kongwangIndex, "kongwang", "adjective")
     } else {
-        val longdeIdx = suiqian12.indexOf(t<String>("longde"))
-        if (longdeIdx >= 0) add(longdeIdx, "longde", "adjective")
         add(yearlyIndex.jiekongIndex, "jiekong", "adjective")
         add(yearlyIndex.jieshaAdjIndex, "jieshaAdj", "adjective")
-        add(yearlyIndex.dahaoAdjIndex, "dahao", "adjective")
     }
+    // 大耗、龙德原本只在 zhongzhou 分支加入盘面；默认算法下只进 suiqian12 列表不显示，这里统一补上
+    val longdeIdx = suiqian12.indexOf(t<String>("longde"))
+    if (longdeIdx >= 0) add(longdeIdx, "longde", "adjective")
+    add(yearlyIndex.dahaoAdjIndex, "dahao", "adjective")
 
     add(yearlyIndex.guchenIndex, "guchen", "adjective")
     add(yearlyIndex.guasuIndex, "guasu", "adjective")

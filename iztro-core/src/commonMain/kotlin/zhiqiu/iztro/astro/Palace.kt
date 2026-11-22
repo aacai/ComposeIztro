@@ -34,8 +34,10 @@ fun getSoulAndBody(param: AstrolabeParam): SoulAndBody {
     val firstIndex = EARTHLY_BRANCHES.indexOf("yinEarthly")
     val monthIndex = fixLunarMonthIndex(solarDate, timeIndex, fixLeap)
 
-    var soulIndex = fixIndex(monthIndex - EARTHLY_BRANCHES.indexOf(earthlyBranchOfTime))
-    var bodyIndex = fixIndex(monthIndex + EARTHLY_BRANCHES.indexOf(earthlyBranchOfTime))
+    // fixLunarMonthIndex 返回的是 0-based 月份（正月=0），与 0-based 时支索引直接相减即可
+    val timeBranchIndex = EARTHLY_BRANCHES.indexOf(earthlyBranchOfTime)
+    var soulIndex = fixIndex(monthIndex - timeBranchIndex)
+    var bodyIndex = fixIndex(monthIndex + timeBranchIndex)
 
     if (from != null) {
         // 地盘、人盘只以传入地支为命宫；身宫仍按出生农历月与时辰安放，不随命宫平移。

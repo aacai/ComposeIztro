@@ -4,16 +4,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import zhiqiu.app.destiny.oinkcompat.Card
+import zhiqiu.app.destiny.oinkcompat.Section
 import zhiqiu.app.destiny.oinkcompat.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +36,6 @@ import zhiqiu.iztro.data.CALENDAR_EARTHLY_BRANCHES
 import zhiqiu.iztro.data.CALENDAR_HEAVENLY_STEMS
 import zhiqiu.iztro.data.FIVE_TIGER
 import zhiqiu.iztro.data.MONTHLY_EARTHLY_BRANCHES
-
 /**
  * 底部三重运限表：十年大运 / 年运 / 月运。
  * 点击后改运限日期并打开对应层级，盘面大限宫、流年星、流月宫名随之更新。
@@ -45,6 +51,7 @@ fun HoroscopeTimeline(
     onSelectDecadal: (palaceIndex: Int, solarDate: String) -> Unit,
     onSelectYear: (solarDate: String) -> Unit,
     onSelectMonth: (solarDate: String) -> Unit,
+    onSetHoroscopeDate: (solarDate: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val decadals = remember(chart) {
@@ -67,64 +74,134 @@ fun HoroscopeTimeline(
         ?: (chart.rawLunar.lunarYear + (selectedDecadal?.decadalStart ?: 1) - 1)
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(IztroTheme.centerBg)
-            .border(1.dp, IztroTheme.gridLine)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(3.dp),
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TimelineRow(label = "大运") {
-            decadals.forEach { chip ->
-                val selected = showDecadal && chip.palaceIndex == horoscope.decadal.index
-                TimelineChip(
-                    primary = "${chip.start}-${chip.end}",
-                    secondary = chip.palaceName,
-                    selected = selected,
-                    selectedColor = IztroTheme.scopePalaceDecadal,
-                    onClick = {
-                        val midAge = (chip.start + chip.end) / 2
-                        onSelectDecadal(chip.palaceIndex, solarDateForAge(chart, midAge))
-                    },
-                )
-            }
-        }
-        TimelineRow(label = "年运") {
-            if (yearChips.isEmpty()) {
-                Text("先选大运", fontSize = 10.sp, color = IztroTheme.textMuted)
-            } else {
-                yearChips.forEach { chip ->
-                    val selected = showYearly && chip.lunarYear == selectedLunarYear
-                    TimelineChip(
-                        primary = chip.lunarYear.toString(),
-                        secondary = "${chip.ganZhi}年",
-                        selected = selected,
-                        selectedColor = IztroTheme.scopePalaceYearly,
-                        onClick = { onSelectYear(solarDateForLunar(chip.lunarYear, 6, 15)) },
+        Section(title = "运限") {
+            Card(contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    TimelineRow(label = "大运") {
+                        decadals.forEach { chip ->
+                            val selected = showDecadal && chip.palaceIndex == horoscope.decadal.index
+                            TimelineChip(
+                                primary = "${chip.start}-${chip.end}",
+                                secondary = chip.palaceName,
+                                selected = selected,
+                                selectedColor = IztroTheme.scopePalaceDecadal,
+                                onClick = {
+                                    val midAge = (chip.start + chip.end) / 2
+                                    onSelectDecadal(chip.palaceIndex, solarDateForAge(chart, midAge))
+                                },
+                            )
+                        }
+                    }
+                    TimelineRow(label = "年运") {
+                        if (yearChips.isEmpty()) {
+                            Text("先选大运", fontSize = 10.sp, color = IztroTheme.textMuted)
+                        } else {
+                            yearChips.forEach { chip ->
+                                val selected = showYearly && chip.lunarYear == selectedLunarYear
+                                TimelineChip(
+                                    primary = chip.lunarYear.toString(),
+                                    secondary = "${chip.ganZhi}年",
+                                    selected = selected,
+                                    selectedColor = IztroTheme.scopePalaceYearly,
+                                    onClick = { onSelectYear(solarDateForLunar(chip.lunarYear, 6, 15)) },
+                                )
+                            }
+                        }
+                    }
+                    TimelineRow(label = "月运") {
+                        MONTH_LABELS.forEachIndexed { i, name ->
+                            val month = i + 1
+                            val selected = showMonthly && month == selectedLunarMonth &&
+                                yearChips.any { it.lunarYear == selectedLunarYear }
+                            TimelineChip(
+                                primary = name,
+                                secondary = monthGanZhi(monthYear, month),
+                                selected = selected,
+                                selectedColor = IztroTheme.scopePalaceMonthly,
+                                onClick = { onSelectMonth(solarDateForLunar(monthYear, month, 15)) },
+                            )
+                        }
+                    }
+                    Text(
+                        text = "运限日 $horoscopeDate · ${horoscope.lunarDate}",
+                        fontSize = 9.sp,
+                        color = IztroTheme.textMuted,
+                        modifier = Modifier.padding(top = 1.dp),
                     )
                 }
             }
         }
-        TimelineRow(label = "月运") {
-            MONTH_LABELS.forEachIndexed { i, name ->
-                val month = i + 1
-                val selected = showMonthly && month == selectedLunarMonth &&
-                    yearChips.any { it.lunarYear == selectedLunarYear }
-                TimelineChip(
-                    primary = name,
-                    secondary = monthGanZhi(monthYear, month),
-                    selected = selected,
-                    selectedColor = IztroTheme.scopePalaceMonthly,
-                    onClick = { onSelectMonth(solarDateForLunar(monthYear, month, 15)) },
-                )
+
+        val daily = horoscope.daily
+        val dailyPalace = chart.palaces.getOrNull(daily.index)
+        val dailyStars = daily.stars.getOrNull(daily.index).orEmpty()
+        val monthDates = remember(horoscopeDate) {
+            val base = runCatching { SolarDate.parse(horoscopeDate) }.getOrNull()
+                ?: return@remember emptyList<SolarDate>()
+            val lastDay = SolarDate(base.year, base.month, 1).plusMonths(1).plusDays(-1).day
+            (1..lastDay).map { SolarDate(base.year, base.month, it) }
+        }
+        val currentDate = runCatching { SolarDate.parse(horoscopeDate) }.getOrNull()
+        val todayIndex = monthDates.indexOfFirst { date ->
+            currentDate != null && date.year == currentDate.year &&
+                date.month == currentDate.month && date.day == currentDate.day
+        }.takeIf { it >= 0 } ?: 0
+        val firstVisible = (todayIndex - 2).coerceAtLeast(0)
+        val dayListState = rememberLazyListState(initialFirstVisibleItemIndex = firstVisible)
+        LaunchedEffect(horoscopeDate) {
+            dayListState.animateScrollToItem(firstVisible)
+        }
+        Section(title = "日运") {
+            Card(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        text = "${daily.heavenlyStem}${daily.earthlyBranch}日 · $horoscopeDate",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = IztroTheme.scopePalaceDaily,
+                    )
+                    Text(
+                        text = "流日宫：${dailyPalace?.name ?: "—"}（${dailyPalace?.earthlyBranch ?: daily.earthlyBranch}）",
+                        fontSize = 10.sp,
+                        color = IztroTheme.textPrimary,
+                    )
+                    if (dailyStars.isNotEmpty()) {
+                        Text(
+                            text = "流日星：${dailyStars.joinToString("、") { it.name }}",
+                            fontSize = 10.sp,
+                            color = IztroTheme.textMuted,
+                        )
+                    }
+                    if (daily.mutagen.isNotEmpty()) {
+                        Text(
+                            text = "流日四化：${daily.mutagen.joinToString("、")}",
+                            fontSize = 10.sp,
+                            color = IztroTheme.textMuted,
+                        )
+                    }
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        state = dayListState,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        itemsIndexed(monthDates, key = { _, date -> date.toIso() }) { _, date ->
+                            val selected = date.year == currentDate?.year &&
+                                date.month == currentDate.month && date.day == currentDate.day
+                            TimelineChip(
+                                primary = "${date.day}日",
+                                secondary = CALENDAR_EARTHLY_BRANCHES[(date.year - 4).mod(12)],
+                                selected = selected,
+                                selectedColor = IztroTheme.scopePalaceDaily,
+                                onClick = { onSetHoroscopeDate(date.toIso()) },
+                            )
+                        }
+                    }
+                }
             }
         }
-        Text(
-            text = "运限日 $horoscopeDate · ${horoscope.lunarDate}",
-            fontSize = 9.sp,
-            color = IztroTheme.textMuted,
-            modifier = Modifier.padding(top = 1.dp),
-        )
     }
 }
 

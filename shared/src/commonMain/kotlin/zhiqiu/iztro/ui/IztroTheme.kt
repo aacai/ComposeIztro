@@ -38,6 +38,8 @@ data class IztroColors(
     val decorator1: Color,
     val decorator2: Color,
     val textMuted: Color,
+    /** 主要正文色：浅色模式纯黑，深色模式提亮为近白 */
+    val textPrimary: Color,
     /** 传统格线：深浅色模式各自可见 */
     val gridLine: Color,
     val soulPalaceBg: Color,
@@ -103,6 +105,7 @@ data class IztroColors(
             decorator1 = Color(0xFF90983C),
             decorator2 = Color(0xFF813359),
             textMuted = Color(0xFF8C8C8C),
+            textPrimary = Color(0xFF000000),
             gridLine = Color(0xFFBDBDBD),
             soulPalaceBg = Color(0xFFFFF8E1),
             bodyPalaceBg = Color(0xFFE8F5E9),
@@ -147,6 +150,7 @@ data class IztroColors(
             decorator1 = Color(0xFFC5E1A5),
             decorator2 = Color(0xFFCE93D8),
             textMuted = Color(0xFF9E9E9E),
+            textPrimary = Color(0xFFE8E8E8),
             gridLine = Color(0xFF6E6E73),
             soulPalaceBg = Color(0xFF3E3424),
             bodyPalaceBg = Color(0xFF1E3A2F),

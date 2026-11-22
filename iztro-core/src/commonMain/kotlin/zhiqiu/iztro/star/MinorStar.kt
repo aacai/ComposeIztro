@@ -21,7 +21,8 @@ fun getMinorStar(solarDateStr: String, timeIndex: Int, fixLeap: Boolean = false)
     val (kuiIndex, yueIndex) = getKuiYueIndex(yearly.first)
     val (huoIndex, lingIndex) = getHuoLingIndex(yearly.second, timeIndex)
     val (kongIndex, jieIndex) = getKongJieIndex(timeIndex)
-    val (luIndex, yangIndex, tuoIndex, maIndex) = getLuYangTuoMaIndex(yearly.first, yearly.second)
+    // 注意：返回字段顺序是 (luIndex, maIndex, yangIndex, tuoIndex)，解构写错会让羊陀马整体错位一宫
+    val (luIndex, maIndex, yangIndex, tuoIndex) = getLuYangTuoMaIndex(yearly.first, yearly.second)
     val (hongluanIndex, tianxiIndex) = getLuanXiIndex(yearly.second)
     val dailyIndex = getDailyStarIndex(solarDateStr, timeIndex, fixLeap)
 

@@ -16,10 +16,12 @@ private val GRADE_B_STAR_KEYS = setOf(
     // 时系：台辅 封诰
     "taifu", "fenggao",
     // 年系：天官 天福 天厨 龙池 凤阁 天才 天寿 华盖 天德 月德
-    // 天空 咸池 孤辰 寡宿 蜚廉 破碎 天哭 天虚
+    // 天空 咸池 孤辰 寡宿 蜚廉 破碎 天哭 天虚 大耗 龙德
     "tianguan", "tianfu", "tianchu", "longchi", "fengge", "tiancai", "tianshou",
     "huagai", "tiande", "yuede", "tiankong", "xianchi", "guchen", "guasu",
-    "feilian", "posui", "tianku", "tianxu",
+    "feilian", "posui", "tianku", "tianxu", "dahao", "longde",
+    // 同乙级：旬空/副旬空/空亡/劫杀/天伤/天使，与孤辰、天哭、天刑同级竖排
+    "xunkong", "fuxunkong", "kongwang", "jieshaAdj", "tianshang", "tianshi",
 )
 
 /** 乙级星名集合（翻译后），从 adjectiveStars 提升为竖排辅星 */

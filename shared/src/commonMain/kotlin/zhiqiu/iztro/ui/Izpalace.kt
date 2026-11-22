@@ -190,6 +190,7 @@ fun Izpalace(
             ages = { narrow ->
                 AgesBlock(
                     palace = palace,
+                    horoscope = horoscope,
                     horoscopeNames = horoscopeNames,
                     narrow = narrow,
                     contentScale = 1f,
@@ -443,11 +444,12 @@ private fun PalaceLayout(
 
 private enum class PalaceSlot { Stars, Ages, AgesNarrow, AgesWide, Footer }
 
-/** 小限年龄串 + 同排运限 chip；narrow 时压缩年龄个数，便于塞进右侧窄空白 */
+/** 小限年龄串 + 同排运限 chip；上方常驻流年行，narrow 时压缩年龄个数 */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AgesBlock(
     palace: DemoPalace,
+    horoscope: DemoHoroscope?,
     horoscopeNames: List<FateTag>,
     narrow: Boolean,
     contentScale: Float = 1f,
@@ -455,36 +457,59 @@ private fun AgesBlock(
 ) {
     val style = LocalAstrolabeStyle.current
     val ageSp = style.ageSp * contentScale
+    val labelSp = (ageSp.value - 2f).coerceAtLeast(7f).sp
+    val flowSp = (ageSp.value - 5f).coerceAtLeast(6f).sp
+    val ageTextSp = (ageSp.value - 1f).coerceAtLeast(8f).sp
     val maxAges = when {
         narrow -> 3
         style.compact -> 5
         else -> 7
     }
-    Row(
-        modifier = if (narrow) Modifier.padding(top = 2.dp) else Modifier.fillMaxWidth().padding(top = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = palace.ages.take(maxAges).joinToString(","),
-            fontSize = ageSp,
-            color = IztroTheme.textMuted,
-            textAlign = TextAlign.Start,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = ageSp * 1.15f,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .padding(end = 4.dp),
-        )
-        if (horoscopeNames.isNotEmpty()) {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                horoscopeNames.forEach { tag ->
-                    FateScopeLabel(tag, compact = style.compact) {
-                        if (tag.scope != "age") onToggleScope(tag.scope)
+    Column {
+        val yearlyAge = horoscope?.yearly?.takeIf { it.index == palace.index }?.nominalAge
+        if (yearlyAge != null) {
+            Text(
+                text = "流年:$yearlyAge",
+                fontSize = flowSp,
+                color = IztroTheme.textPrimary,
+                maxLines = 1,
+                lineHeight = flowSp * 1.1f,
+            )
+        }
+        Row(
+            modifier = if (narrow) Modifier.padding(top = 1.dp) else Modifier.fillMaxWidth().padding(top = 1.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "小限:",
+                    fontSize = labelSp,
+                    color = IztroTheme.textPrimary,
+                    maxLines = 1,
+                    lineHeight = labelSp * 1.1f,
+                    modifier = Modifier.padding(end = 1.dp),
+                )
+                Text(
+                    text = palace.ages.take(maxAges).joinToString(","),
+                    fontSize = ageTextSp,
+                    color = IztroTheme.textPrimary,
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = ageTextSp * 1.15f,
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+            }
+            if (horoscopeNames.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    horoscopeNames.forEach { tag ->
+                        FateScopeLabel(tag, compact = style.compact) {
+                            if (tag.scope != "age") onToggleScope(tag.scope)
+                        }
                     }
                 }
             }

@@ -5,10 +5,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -22,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import zhiqiu.app.destiny.oinkcompat.Dots
 import zhiqiu.app.destiny.oinkcompat.Text
 import zhiqiu.iztro.Algorithm
 import zhiqiu.iztro.AstroType
@@ -171,7 +176,11 @@ private fun IztrolabeContent(
     val iztro = rememberIztro(input, props.horoscopeDate, props.horoscopeHour)
     if (iztro == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "排盘中…", color = IztroTheme.textMuted)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Dots(color = IztroTheme.major)
+                Spacer(Modifier.height(6.dp))
+                Text(text = "排盘中…", color = IztroTheme.textMuted)
+            }
         }
         return
     }
@@ -393,20 +402,17 @@ private fun AstrolabeGrid(
 
     Column(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .background(IztroTheme.boardBg),
     ) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth(),
-    ) {
-        // 中宫/三运已收矮，盘面略收比例，高度更多落到十二宫；字号走 AstrolabeStyle。
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        // 盘面按宽度定高，整体放进可上下滚动的列，底部运限/日运 section 不再挤压盘面
         val boardWidth = maxWidth
-        val boardHeight = maxHeight.coerceAtMost(boardWidth * 1.48f)
+        val boardHeight = boardWidth * 1.48f
         val style = rememberAstrolabeStyle(boardWidth)
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth().height(boardHeight),
             contentAlignment = Alignment.Center,
         ) {
             CompositionLocalProvider(LocalAstrolabeStyle provides style) {
@@ -523,6 +529,7 @@ private fun AstrolabeGrid(
             onSetHoroscopeDate(date)
             activateScope("monthly")
         },
+        onSetHoroscopeDate = onSetHoroscopeDate,
         modifier = Modifier.fillMaxWidth(),
     )
     }
