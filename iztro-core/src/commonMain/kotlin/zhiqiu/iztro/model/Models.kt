@@ -72,6 +72,11 @@ data class Horoscope(
     val monthly: HoroscopeItem,
     val daily: HoroscopeItem,
     val hourly: HoroscopeItem,
+    /**
+     * 流年小限：以流年地支为起点的每宫年龄串（每 12 岁一档），
+     * 与原盘「小限」（以生年支起算）一一对应。
+     */
+    val yearlyAges: List<List<Int>> = emptyList(),
 )
 
 data class Astrolabe(

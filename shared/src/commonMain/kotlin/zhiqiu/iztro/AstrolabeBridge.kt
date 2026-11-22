@@ -202,6 +202,7 @@ private fun Horoscope.toDemoHoroscope(): DemoHoroscope {
         monthly = monthly.toDemoItem(),
         daily = daily.toDemoItem(),
         hourly = hourly.toDemoItem(),
+        yearlyAges = yearlyAges,
     )
 }
 

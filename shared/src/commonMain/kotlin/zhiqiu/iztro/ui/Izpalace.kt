@@ -458,7 +458,6 @@ private fun AgesBlock(
     val style = LocalAstrolabeStyle.current
     val ageSp = style.ageSp * contentScale
     val labelSp = (ageSp.value - 2f).coerceAtLeast(7f).sp
-    val flowSp = (ageSp.value - 5f).coerceAtLeast(6f).sp
     val ageTextSp = (ageSp.value - 1f).coerceAtLeast(8f).sp
     val maxAges = when {
         narrow -> 3
@@ -466,15 +465,29 @@ private fun AgesBlock(
         else -> 7
     }
     Column {
-        val yearlyAge = horoscope?.yearly?.takeIf { it.index == palace.index }?.nominalAge
-        if (yearlyAge != null) {
-            Text(
-                text = "流年:$yearlyAge",
-                fontSize = flowSp,
-                color = IztroTheme.textPrimary,
-                maxLines = 1,
-                lineHeight = flowSp * 1.1f,
-            )
+        // 流年小限：以流年地支起算的每宫年龄串
+        val yearlyAges = horoscope?.yearlyAges?.getOrNull(palace.index).orEmpty()
+        if (yearlyAges.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "流年:",
+                    fontSize = labelSp,
+                    color = IztroTheme.textPrimary,
+                    maxLines = 1,
+                    lineHeight = labelSp * 1.1f,
+                    modifier = Modifier.padding(end = 1.dp),
+                )
+                Text(
+                    text = yearlyAges.take(maxAges).joinToString(","),
+                    fontSize = ageTextSp,
+                    color = IztroTheme.textPrimary,
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = ageTextSp * 1.15f,
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+            }
         }
         Row(
             modifier = if (narrow) Modifier.padding(top = 1.dp) else Modifier.fillMaxWidth().padding(top = 1.dp),

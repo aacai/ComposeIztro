@@ -405,7 +405,7 @@ private fun AstrolabeGrid(
         // 盘面按宽度定高，但不超过可用高度（给底部运限/日运 section 留出空间），
         // 避免大屏或窄高屏上盘面被拉满整屏。
         val boardWidth = maxWidth
-        val boardHeight = (boardWidth * 1.48f).coerceAtMost(maxHeight - 190.dp)
+        val boardHeight = (boardWidth * 1.48f).coerceAtMost(maxHeight - 280.dp)
         val style = rememberAstrolabeStyle(boardWidth)
         Column(
             modifier = Modifier

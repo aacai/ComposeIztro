@@ -13,6 +13,7 @@ import zhiqiu.iztro.star.getHoroscopeStar
 import zhiqiu.iztro.star.getYearly12
 import zhiqiu.iztro.utils.fixEarthlyBranchIndex
 import zhiqiu.iztro.utils.fixIndex
+import zhiqiu.iztro.utils.getAgeIndex
 import zhiqiu.iztro.utils.getMutagensByHeavenlyStem
 import zhiqiu.iztro.utils.normalizeDayBoundary
 import zhiqiu.iztro.utils.timeToIndex
@@ -108,6 +109,14 @@ fun Astrolabe.horoscope(targetSolarDate: String, timeIndex: Int? = null): Horosc
     }
 
     val yearly12 = getYearly12(targetDate)
+    // 流年小限：以流年地支为起点，按生年小限同样的规则排出每宫年龄串
+    val yearlyAgeIndex = getAgeIndex(stemBranch.yearly.second)
+    val yearlyAges = Array<List<Int>?>(12) { null }
+    for (i in 0 until 12) {
+        val age = (0 until 10).map { j -> 12 * j + i + 1 }
+        val idx = if (gender == "male") fixIndex(yearlyAgeIndex + i) else fixIndex(yearlyAgeIndex - i)
+        yearlyAges[idx] = age
+    }
     return Horoscope(
         solarDate = normalizeSolarDate(targetSolarDate),
         lunarDate = targetLunar.format(useChinese = true),
@@ -157,6 +166,7 @@ fun Astrolabe.horoscope(targetSolarDate: String, timeIndex: Int? = null): Horosc
             stemBranch.hourly.second,
             "hourly",
         ),
+        yearlyAges = yearlyAges.map { it!! },
     )
 }
 

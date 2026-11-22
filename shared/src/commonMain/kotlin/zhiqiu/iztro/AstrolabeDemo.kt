@@ -59,6 +59,8 @@ data class DemoHoroscope(
     val monthly: DemoHoroscopeItem,
     val daily: DemoHoroscopeItem,
     val hourly: DemoHoroscopeItem,
+    /** 流年小限：每宫年龄串（以流年地支起算，每 12 岁一档） */
+    val yearlyAges: List<List<Int>> = emptyList(),
 )
 
 data class DemoFourPillar(
