@@ -5,6 +5,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import zhiqiu.applewidgets.kmp.oink.theme.oinkDarkColors
+import zhiqiu.applewidgets.kmp.oink.theme.oinkLightColors
 
 /** 盘面日/夜间模式 */
 enum class BaziColorMode {
@@ -82,19 +84,22 @@ data class BaziColors(
     })
 
     companion object {
+        private val oinkLight = oinkLightColors()
+        private val oinkDark = oinkDarkColors()
+
         val Light = BaziColors(
             isDark = false,
-            page = Color(0xFFFAFAFA),
-            panel = Color(0xFFF5F0ED),
-            ink = Color(0xFF222222),
-            muted = Color(0xFF666666),
-            label = Color(0xFF5A5A5A),
-            sectionMuted = Color(0xFF999999),
-            phaseBarBg = Color(0xFFF7F2E9),
-            phaseDivider = Color(0xFFD8D0C6),
-            softDivider = Color(0xFFE0D8D0),
-            selectedBg = Color(0xFFF2E8DC),
-            natalLuckDivider = Color(0xFFD0C8C0),
+            page = oinkLight.bg,
+            panel = oinkLight.well,
+            ink = oinkLight.text,
+            muted = oinkLight.text2,
+            label = oinkLight.text2,
+            sectionMuted = oinkLight.text3,
+            phaseBarBg = oinkLight.wellHi,
+            phaseDivider = oinkLight.line2,
+            softDivider = oinkLight.line2,
+            selectedBg = oinkLight.accentSoft,
+            natalLuckDivider = oinkLight.line2,
             wood = Color(0xFF43A047),
             fire = Color(0xFFE57373),
             earth = Color(0xFFA1887F),
@@ -105,17 +110,17 @@ data class BaziColors(
         /** 深色下五行色整体提亮，保证暗底可读 */
         val Dark = BaziColors(
             isDark = true,
-            page = Color(0xFF1C1B19),
-            panel = Color(0xFF2A2825),
-            ink = Color(0xFFE8E4DC),
-            muted = Color(0xFF9E988C),
-            label = Color(0xFF9E988C),
-            sectionMuted = Color(0xFF7E7A72),
-            phaseBarBg = Color(0xFF2F2B24),
-            phaseDivider = Color(0xFF4A443B),
-            softDivider = Color(0xFF3F3B34),
-            selectedBg = Color(0xFF453A2C),
-            natalLuckDivider = Color(0xFF4A443B),
+            page = oinkDark.bg,
+            panel = oinkDark.well,
+            ink = oinkDark.text,
+            muted = oinkDark.text2,
+            label = oinkDark.text2,
+            sectionMuted = oinkDark.text3,
+            phaseBarBg = oinkDark.wellHi,
+            phaseDivider = oinkDark.line2,
+            softDivider = oinkDark.line2,
+            selectedBg = oinkDark.accentSoft,
+            natalLuckDivider = oinkDark.line2,
             wood = Color(0xFF81C784),
             fire = Color(0xFFEF9A9A),
             earth = Color(0xFFBCAAA4),

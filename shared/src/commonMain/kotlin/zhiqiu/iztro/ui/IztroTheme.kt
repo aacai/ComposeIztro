@@ -5,6 +5,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import zhiqiu.applewidgets.kmp.oink.theme.oinkDarkColors
+import zhiqiu.applewidgets.kmp.oink.theme.oinkLightColors
 
 /** 盘面日/夜间模式 */
 enum class IztroColorMode {
@@ -92,30 +94,33 @@ data class IztroColors(
     }
 
     companion object {
+        private val oinkLight = oinkLightColors()
+        private val oinkDark = oinkDarkColors()
+
         val Light = IztroColors(
             isDark = false,
             major = Color(0xFF531DAB),
-            focus = Color(0xFF000000),
+            focus = oinkLight.text,
             quan = Color(0xFF2F54EB),
             tough = Color(0xFF612500),
             awesome = Color(0xFFD4380D),
-            active = Color(0xFF1890FF),
+            active = oinkLight.accent,
             happy = Color(0xFFC41D7F),
             nice = Color(0xFF237804),
             decorator1 = Color(0xFF90983C),
             decorator2 = Color(0xFF813359),
-            textMuted = Color(0xFF8C8C8C),
-            textPrimary = Color(0xFF000000),
-            gridLine = Color(0xFFBDBDBD),
+            textMuted = oinkLight.text2,
+            textPrimary = oinkLight.text,
+            gridLine = oinkLight.line2,
             soulPalaceBg = Color(0xFFFFF8E1),
             bodyPalaceBg = Color(0xFFE8F5E9),
-            centerBg = Color(0xFFFAFAFA),
-            palaceBg = Color.White,
-            boardBg = Color(0xFFF5F5F5),
-            focusedPalaceBg = Color(0xFFE8DEF8),
+            centerBg = oinkLight.wellHi,
+            palaceBg = oinkLight.card,
+            boardBg = oinkLight.bg,
+            focusedPalaceBg = oinkLight.accentSoft,
             oppositePalaceBg = Color(0xFFFFE4E4),
             surroundedPalaceBg = Color(0xFFFFE4E4),
-            ji = Color(0xFF424242),
+            ji = oinkLight.text2,
             starMajorRed = Color(0xFFC62828),
             starToughBlue = Color(0xFF1565C0),
             starSoftPurple = Color(0xFF6A1B9A),
@@ -129,38 +134,38 @@ data class IztroColors(
             scopePalaceMonthly = Color(0xFF2E7D32),
             scopePalaceDaily = Color(0xFF8D6E63),
             scopePalaceHourly = Color(0xFF1565C0),
-            chipInactiveBg = Color(0xFFF0F0F0),
-            chipInactiveFg = Color(0xFF9E9E9E),
-            stepBtnBg = Color(0xFFE8EAF6),
-            stepBtnDisabledBg = Color(0xFFF0F0F0),
-            stepBtnDisabledFg = Color(0xFFBDBDBD),
+            chipInactiveBg = oinkLight.well,
+            chipInactiveFg = oinkLight.text3,
+            stepBtnBg = oinkLight.accentSoft,
+            stepBtnDisabledBg = oinkLight.well,
+            stepBtnDisabledFg = oinkLight.text3,
         )
 
         /** 柔和深色：避免纯黑刺眼，星曜略提亮保证可读 */
         val Dark = IztroColors(
             isDark = true,
             major = Color(0xFFB39DDB),
-            focus = Color(0xFFE8E8E8),
+            focus = oinkDark.text,
             quan = Color(0xFF7C9CFF),
             tough = Color(0xFFFFAB91),
             awesome = Color(0xFFFF8A65),
-            active = Color(0xFF64B5F6),
+            active = oinkDark.accent,
             happy = Color(0xFFF48FB1),
             nice = Color(0xFF81C784),
             decorator1 = Color(0xFFC5E1A5),
             decorator2 = Color(0xFFCE93D8),
-            textMuted = Color(0xFF9E9E9E),
-            textPrimary = Color(0xFFE8E8E8),
-            gridLine = Color(0xFF6E6E73),
+            textMuted = oinkDark.text2,
+            textPrimary = oinkDark.text,
+            gridLine = oinkDark.line2,
             soulPalaceBg = Color(0xFF3E3424),
             bodyPalaceBg = Color(0xFF1E3A2F),
-            centerBg = Color(0xFF252528),
-            palaceBg = Color(0xFF2C2C30),
-            boardBg = Color(0xFF1A1A1D),
-            focusedPalaceBg = Color(0xFF3D3554),
+            centerBg = oinkDark.wellHi,
+            palaceBg = oinkDark.card,
+            boardBg = oinkDark.bg,
+            focusedPalaceBg = oinkDark.accentSoft,
             oppositePalaceBg = Color(0xFF4A3030),
             surroundedPalaceBg = Color(0xFF4A3030),
-            ji = Color(0xFFBDBDBD),
+            ji = oinkDark.text2,
             starMajorRed = Color(0xFFEF9A9A),
             starToughBlue = Color(0xFF90CAF9),
             starSoftPurple = Color(0xFFCE93D8),
@@ -174,11 +179,11 @@ data class IztroColors(
             scopePalaceMonthly = Color(0xFF81C784),
             scopePalaceDaily = Color(0xFFBCAAA4),
             scopePalaceHourly = Color(0xFF64B5F6),
-            chipInactiveBg = Color(0xFF3A3A3E),
-            chipInactiveFg = Color(0xFF9E9E9E),
-            stepBtnBg = Color(0xFF3A3F5C),
-            stepBtnDisabledBg = Color(0xFF333338),
-            stepBtnDisabledFg = Color(0xFF6E6E6E),
+            chipInactiveBg = oinkDark.well,
+            chipInactiveFg = oinkDark.text3,
+            stepBtnBg = oinkDark.accentSoft,
+            stepBtnDisabledBg = oinkDark.well,
+            stepBtnDisabledFg = oinkDark.text3,
         )
 
         fun forMode(mode: IztroColorMode): IztroColors = when (mode) {
