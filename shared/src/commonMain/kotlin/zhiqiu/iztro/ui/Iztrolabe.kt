@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,8 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import zhiqiu.app.destiny.oinkcompat.Dots
-import zhiqiu.app.destiny.oinkcompat.Text
 import zhiqiu.iztro.Algorithm
 import zhiqiu.iztro.AstroType
 import zhiqiu.iztro.DemoChart
@@ -58,6 +55,8 @@ fun Iztrolabe(
     /** null = 内部自管；非 null = 受控，配合 [onColorModeChange] */
     colorMode: IztroColorMode? = null,
     onColorModeChange: ((IztroColorMode) -> Unit)? = null,
+    /** 排盘加载态：true = 计算中，false = 已就绪。加载 UI 交给调用方。 */
+    onLoadingChange: ((Boolean) -> Unit)? = null,
     themeConfig: IztroThemeConfig = IztroThemeConfig.Default,
     modifier: Modifier = Modifier,
 ) {
@@ -79,6 +78,7 @@ fun Iztrolabe(
             colorMode = colorMode,
         ),
         onColorModeChange = onColorModeChange,
+        onLoadingChange = onLoadingChange,
         themeConfig = themeConfig,
         modifier = modifier,
     )
@@ -88,6 +88,8 @@ fun Iztrolabe(
 fun Iztrolabe(
     props: IztrolabeProps,
     onColorModeChange: ((IztroColorMode) -> Unit)? = null,
+    /** 排盘加载态：true = 计算中，false = 已就绪。加载 UI 交给调用方。 */
+    onLoadingChange: ((Boolean) -> Unit)? = null,
     themeConfig: IztroThemeConfig = IztroThemeConfig.Default,
     modifier: Modifier = Modifier,
 ) {
@@ -120,7 +122,11 @@ fun Iztrolabe(
     IztroThemeProvider(mode = resolvedColorMode, config = themeConfig) {
         // 不再用 key 强制整棵子树销毁重建：rememberIztro 内部按 input 重算，
         // 宫位状态（hover/scope）沿用即可，换盘时保留旧盘直到新盘就绪，避免闪一下。
-        val input = remember(props, birthday, birthTime, algorithm, localAstroType) {
+        // 只把影响本命盘排盘的字段作为 key：运限日期/色模式变化不应重排本命盘
+        val input = remember(
+            birthday, birthTime, props.gender, props.birthdayType, props.isLeapMonth,
+            props.fixLeap, props.lang, props.name, props.options, algorithm, localAstroType,
+        ) {
             props.copy(birthday = birthday, birthTime = birthTime)
                 .toInput(algorithm, localAstroType)
         }
@@ -135,6 +141,7 @@ fun Iztrolabe(
             onBirthTimeChange = { birthTime = it },
             colorMode = resolvedColorMode,
             onToggleColorMode = { setColorMode(resolvedColorMode.toggle()) },
+            onLoadingChange = onLoadingChange,
             modifier = modifier,
         )
     }
@@ -172,17 +179,14 @@ private fun IztrolabeContent(
     onBirthTimeChange: (Int) -> Unit,
     colorMode: IztroColorMode,
     onToggleColorMode: () -> Unit,
+    onLoadingChange: ((Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val iztro = rememberIztro(input, props.horoscopeDate, props.horoscopeHour)
+    // 只上报加载态，加载 UI 由调用方（App）决定
+    LaunchedEffect(iztro == null) { onLoadingChange?.invoke(iztro == null) }
     if (iztro == null) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Dots(color = IztroTheme.major)
-                Spacer(Modifier.height(6.dp))
-                Text(text = "排盘中…", color = IztroTheme.textMuted)
-            }
-        }
+        Box(modifier = modifier.fillMaxSize())
         return
     }
 
@@ -401,12 +405,38 @@ private fun AstrolabeGrid(
         hoveredIndex = index
     }
 
+    // 稳定回调引用：12 宫共用，避免每次重组都生成新 lambda 使子宫无法跳过
+    val stableOnFocus = remember(chart) { { index: Int? -> onPalaceFocus(index) } }
+    val stableOnClick = remember(chart) { { index: Int -> onPalaceClick(index) } }
+    val stableOnToggleScope = remember(chart) { { scope: String -> toggleScope(scope) } }
+    val stableOnToggleFlyStar = remember(chart) {
+        { stem: String -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem }
+    }
+    val stableOnHoverStem = remember(chart) { { stem: String? -> hoverHeavenlyStem = stem } }
+
     BoxWithConstraints(modifier = modifier.fillMaxSize().background(IztroTheme.boardBg)) {
-        // 盘面按宽度定高，但不超过可用高度（给底部运限/日运 section 留出空间），
-        // 避免大屏或窄高屏上盘面被拉满整屏。
+        // 盘面直接占满可用高度：底部大运/运限时间轴由页面滚动查看，不再预留空间。
         val boardWidth = maxWidth
-        val boardHeight = (boardWidth * 1.48f).coerceAtMost(maxHeight - 280.dp)
-        val style = rememberAstrolabeStyle(boardWidth)
+        val boardHeight = maxHeight.coerceIn(400.dp, 760.dp)
+        val baseStyle = rememberAstrolabeStyle(boardWidth)
+        // 全盘统一密度系数：按外圈宫格实际高度估算一次，十二宫与中宫共用，保证整盘一致
+        val style = remember(baseStyle, boardHeight, chart) {
+            val totalWeight = baseStyle.rowWeightOuter * 2f + baseStyle.rowWeightMid
+            val outerRowH = boardHeight.value * baseStyle.rowWeightOuter / totalWeight -
+                baseStyle.cellGap.value * 2f - baseStyle.cellPad.value * 2f
+            // 最拥挤宫的需求：footer(杂曜+长生行) + 小限行 + 星曜区最小高度
+            val maxAdj = chart.palaces.maxOf { it.adjectiveStars.size }
+            val maxPerCol = if (baseStyle.compact) 5 else 4
+            val adjRows = minOf(maxAdj, maxPerCol).coerceAtLeast(1)
+            val footerNeed = baseStyle.adjStarSp.value * adjRows * 1.1f +
+                baseStyle.adjStarSp.value * 1.15f + 4f
+            val agesNeed = baseStyle.ageSp.value * 2f * 1.35f
+            val starNeed = baseStyle.majorStarSp.value * 2f * 1.12f +
+                baseStyle.brightSp.value * 2f * 1.12f +
+                baseStyle.adjStarSp.value * 0.66f * 1.2f
+            val factor = (outerRowH / (footerNeed + agesNeed + starNeed)).coerceIn(0.6f, 1f)
+            baseStyle.scaled(factor)
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -421,14 +451,15 @@ private fun AstrolabeGrid(
                     Row(Modifier.weight(style.rowWeightOuter).fillMaxWidth()) {
                         listOf(3, 4, 5, 6).forEach { idx ->
                             PalaceSlot(
-                                chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                chart, horoscope, chart.palaces[idx], idx,
+                                palaceHighlight(previewIndex, idx),
                                 activeHeavenlyStem, hoverHeavenlyStem,
                                 showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                                onFocus = ::onPalaceFocus,
-                                onClickPalace = ::onPalaceClick,
-                                onToggleScope = ::toggleScope,
-                                onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                                onHoverStem = { hoverHeavenlyStem = it },
+                                onFocus = stableOnFocus,
+                                onClickPalace = stableOnClick,
+                                onToggleScope = stableOnToggleScope,
+                                onToggleFlyStar = stableOnToggleFlyStar,
+                                onHoverStem = stableOnHoverStem,
                                 modifier = Modifier.weight(1f).fillMaxHeight().padding(style.cellGap),
                             )
                         }
@@ -437,14 +468,15 @@ private fun AstrolabeGrid(
                         Column(Modifier.weight(1f).fillMaxHeight()) {
                             listOf(2, 1).forEach { idx ->
                                 PalaceSlot(
-                                    chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                    chart, horoscope, chart.palaces[idx], idx,
+                                    palaceHighlight(previewIndex, idx),
                                     activeHeavenlyStem, hoverHeavenlyStem,
                                     showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                                    onFocus = ::onPalaceFocus,
-                                    onClickPalace = ::onPalaceClick,
-                                    onToggleScope = ::toggleScope,
-                                    onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                                    onHoverStem = { hoverHeavenlyStem = it },
+                                    onFocus = stableOnFocus,
+                                    onClickPalace = stableOnClick,
+                                    onToggleScope = stableOnToggleScope,
+                                    onToggleFlyStar = stableOnToggleFlyStar,
+                                    onHoverStem = stableOnHoverStem,
                                     modifier = Modifier.weight(1f).fillMaxWidth().padding(style.cellGap),
                                 )
                             }
@@ -479,14 +511,15 @@ private fun AstrolabeGrid(
                         Column(Modifier.weight(1f).fillMaxHeight()) {
                             listOf(7, 8).forEach { idx ->
                                 PalaceSlot(
-                                    chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                    chart, horoscope, chart.palaces[idx], idx,
+                                    palaceHighlight(previewIndex, idx),
                                     activeHeavenlyStem, hoverHeavenlyStem,
                                     showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                                    onFocus = ::onPalaceFocus,
-                                    onClickPalace = ::onPalaceClick,
-                                    onToggleScope = ::toggleScope,
-                                    onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                                    onHoverStem = { hoverHeavenlyStem = it },
+                                    onFocus = stableOnFocus,
+                                    onClickPalace = stableOnClick,
+                                    onToggleScope = stableOnToggleScope,
+                                    onToggleFlyStar = stableOnToggleFlyStar,
+                                    onHoverStem = stableOnHoverStem,
                                     modifier = Modifier.weight(1f).fillMaxWidth().padding(style.cellGap),
                                 )
                             }
@@ -495,14 +528,15 @@ private fun AstrolabeGrid(
                     Row(Modifier.weight(style.rowWeightOuter).fillMaxWidth()) {
                         listOf(0, 11, 10, 9).forEach { idx ->
                             PalaceSlot(
-                                chart, horoscope, chart.palaces[idx], idx, previewIndex,
+                                chart, horoscope, chart.palaces[idx], idx,
+                                palaceHighlight(previewIndex, idx),
                                 activeHeavenlyStem, hoverHeavenlyStem,
                                 showDecadal, showYearly, showMonthly, showDaily, showHourly,
-                                onFocus = ::onPalaceFocus,
-                                onClickPalace = ::onPalaceClick,
-                                onToggleScope = ::toggleScope,
-                                onToggleFlyStar = { stem -> activeHeavenlyStem = if (activeHeavenlyStem == stem) null else stem },
-                                onHoverStem = { hoverHeavenlyStem = it },
+                                onFocus = stableOnFocus,
+                                onClickPalace = stableOnClick,
+                                onToggleScope = stableOnToggleScope,
+                                onToggleFlyStar = stableOnToggleFlyStar,
+                                onHoverStem = stableOnHoverStem,
                                 modifier = Modifier.weight(1f).fillMaxHeight().padding(style.cellGap),
                             )
                         }
@@ -542,7 +576,7 @@ private fun PalaceSlot(
     horoscope: DemoHoroscope,
     palace: zhiqiu.iztro.DemoPalace,
     index: Int,
-    focusedIndex: Int?,
+    highlight: PalaceHighlight,
     activeHeavenlyStem: String?,
     hoverHeavenlyStem: String?,
     showDecadal: Boolean,
@@ -560,7 +594,7 @@ private fun PalaceSlot(
     Izpalace(
         palace = palace,
         horoscope = horoscope,
-        focusedIndex = focusedIndex,
+        highlight = highlight,
         activeHeavenlyStem = activeHeavenlyStem,
         hoverHeavenlyStem = hoverHeavenlyStem,
         showDecadal = showDecadal,

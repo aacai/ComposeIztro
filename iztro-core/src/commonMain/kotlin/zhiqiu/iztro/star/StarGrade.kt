@@ -20,8 +20,10 @@ private val GRADE_B_STAR_KEYS = setOf(
     "tianguan", "tianfu", "tianchu", "longchi", "fengge", "tiancai", "tianshou",
     "huagai", "tiande", "yuede", "tiankong", "xianchi", "guchen", "guasu",
     "feilian", "posui", "tianku", "tianxu", "dahao", "longde",
-    // 同乙级：旬空/副旬空/空亡/劫杀/天伤/天使，与孤辰、天哭、天刑同级竖排
-    "xunkong", "fuxunkong", "kongwang", "jieshaAdj", "tianshang", "tianshi",
+    // 同乙级：旬空/副旬空/空亡/截路/劫杀/天伤/天使，与孤辰、天哭、天刑同级竖排
+    "xunkong", "fuxunkong", "kongwang", "jielu", "jieshaAdj", "tianshang", "tianshi",
+    // 年解：年系解神，乙级竖排
+    "nianjie",
 )
 
 /** 乙级星名集合（翻译后），从 adjectiveStars 提升为竖排辅星 */

@@ -25,8 +25,9 @@ data class IztroState(
  */
 @Composable
 fun rememberIztro(input: IztroInput, initialHoroscopeDate: String? = null, initialHoroscopeHour: Int? = null): IztroState? {
-    var chart by remember { mutableStateOf<DemoChart?>(null) }
-    var horoscope by remember { mutableStateOf<DemoHoroscope?>(null) }
+    var snapshot by remember {
+        mutableStateOf<Pair<DemoChart, DemoHoroscope>?>(null)
+    }
     var horoscopeDate by remember {
         mutableStateOf(initialHoroscopeDate ?: currentSolarDate())
     }
@@ -34,22 +35,19 @@ fun rememberIztro(input: IztroInput, initialHoroscopeDate: String? = null, initi
         mutableIntStateOf(initialHoroscopeHour ?: 0)
     }
 
-    LaunchedEffect(input) {
-        // 不提前清空：新盘算好前继续显示旧盘，避免「排盘中…」与整盘之间的一次跳变
-        val natal = withContext(Dispatchers.Default) { createDemoChart(input) }
-        chart = natal
-    }
-
-    LaunchedEffect(horoscopeDate, horoscopeHour, chart) {
-        val natal = chart ?: return@LaunchedEffect
+    // 本命排盘 + 运限计算一次算完再发布：避免「旧 chart + 新 horoscope」的中间态与两次整盘重组。
+    // 计算期间保留旧快照，新盘就绪前不出现「排盘中…」跳变。
+    LaunchedEffect(input, horoscopeDate, horoscopeHour) {
         val next = withContext(Dispatchers.Default) {
-            computeHoroscope(natal, horoscopeDate, horoscopeHour)
+            val natal = createDemoChart(input)
+            natal to computeHoroscope(natal, horoscopeDate, horoscopeHour)
         }
-        horoscope = next
+        snapshot = next
     }
 
-    val natal = chart
-    val h = horoscope
+    val ready = snapshot
+    val natal = ready?.first
+    val h = ready?.second
     if (natal == null || h == null) return null
     return IztroState(
         chart = natal,

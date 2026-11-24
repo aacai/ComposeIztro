@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -24,6 +25,7 @@ import zhiqiu.app.destiny.oinkcompat.menuAnchor
 import zhiqiu.app.destiny.oinkcompat.Text
 import zhiqiu.app.destiny.oinkcompat.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import zhiqiu.iztro.Algorithm
@@ -116,148 +121,226 @@ fun IzpalaceCenter(
             )
         }
 
-        Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-            horizontalAlignment = align,
-            verticalArrangement = Arrangement.spacedBy(gap),
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+        // 中宫内容按可用高度自适应缩放，保证命主/四化等一屏看全
+        CenterAutoFit(style = style, modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = align,
+                verticalArrangement = Arrangement.spacedBy(gap),
             ) {
-                Text(
-                    text = chart.name.ifBlank { " " },
-                    fontSize = style.centerTitleSp,
-                    fontWeight = FontWeight.Bold,
-                    color = IztroTheme.major,
-                    lineHeight = style.centerTitleSp * 1.15f,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                )
-                Text(
-                    text = chart.genderLabel.ifBlank { chart.gender },
-                    fontSize = style.centerBodySp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (chart.genderLabel.contains("男") || chart.gender == "男") {
-                        IztroTheme.quan
-                    } else {
-                        IztroTheme.happy
-                    },
-                    lineHeight = style.centerBodySp * 1.15f,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
-                Text(
-                    text = chart.fiveElementsClass,
-                    fontSize = style.centerBodySp,
-                    fontWeight = FontWeight.Bold,
-                    color = IztroTheme.awesome,
-                    lineHeight = style.centerBodySp * 1.15f,
-                )
-                // 顶栏切换黑夜/白天，一眼能点到
-                StepBtn(
-                    label = if (colorMode == IztroColorMode.Dark) "白天" else "黑夜",
-                    enabled = true,
-                    onClick = onToggleColorMode,
-                    fontSize = style.centerBtnSp,
-                    compact = style.compact,
-                )
-            }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = chart.name.ifBlank { " " },
+                        fontSize = style.centerTitleSp,
+                        fontWeight = FontWeight.Bold,
+                        color = IztroTheme.major,
+                        lineHeight = style.centerTitleSp * 1.15f,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = chart.genderLabel.ifBlank { chart.gender },
+                        fontSize = style.centerBodySp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (chart.genderLabel.contains("男") || chart.gender == "男") {
+                            IztroTheme.quan
+                        } else {
+                            IztroTheme.happy
+                        },
+                        lineHeight = style.centerBodySp * 1.15f,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                    Text(
+                        text = chart.fiveElementsClass,
+                        fontSize = style.centerBodySp,
+                        fontWeight = FontWeight.Bold,
+                        color = IztroTheme.awesome,
+                        lineHeight = style.centerBodySp * 1.15f,
+                    )
+                    // 顶栏切换黑夜/白天，一眼能点到
+                    StepBtn(
+                        label = if (colorMode == IztroColorMode.Dark) "白天" else "黑夜",
+                        enabled = true,
+                        onClick = onToggleColorMode,
+                        fontSize = style.centerBtnSp,
+                        compact = style.compact,
+                    )
+                }
 
-            Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                CenterLine("真太阳时", chart.trueSolarTimeText, style.centerBodySp)
-                CenterLine("农历", lunarLine, style.centerBodySp)
-                CenterLine(
-                    "命主",
-                    "${chart.soul} 身主：${chart.body} 子斗：${chart.earthlyBranchOfSoulPalace}",
-                    style.centerBodySp,
-                )
-                // 虚岁按运限日相对出生推算，便于对照各宫大限年龄段
-                if (nominalAge != null) {
-                    val ageValue = buildString {
-                        append(nominalAge)
-                        append(" 岁")
-                        if (!decadalPalaceName.isNullOrEmpty()) {
-                            append("　大限·")
-                            append(decadalPalaceName)
+                Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                    CenterLine("真太阳时", chart.trueSolarTimeText, style.centerBodySp)
+                    CenterLine("农历", lunarLine, style.centerBodySp)
+                    CenterLine(
+                        "命主",
+                        "${chart.soul} 身主：${chart.body} 子斗：${chart.earthlyBranchOfSoulPalace}",
+                        style.centerBodySp,
+                    )
+                    // 虚岁按运限日相对出生推算，便于对照各宫大限年龄段
+                    if (nominalAge != null) {
+                        val ageValue = buildString {
+                            append(nominalAge)
+                            append(" 岁")
+                            if (!decadalPalaceName.isNullOrEmpty()) {
+                                append("　大限·")
+                                append(decadalPalaceName)
+                            }
+                        }
+                        CenterLine("虚岁", ageValue, style.centerBodySp)
+                    }
+                    if (!style.compact) {
+                        CenterLine("星座", chart.sign, style.centerBodySp)
+                    }
+
+                    if (jieqiPillars.size == 4) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start,
+                        ) {
+                            Text(
+                                "节气四柱",
+                                fontSize = style.centerBodySp,
+                                color = IztroTheme.textMuted,
+                                lineHeight = style.centerBodySp * 1.15f,
+                                modifier = Modifier.padding(end = 6.dp),
+                            )
+                            FourPillarsRow(jieqiPillars, compact = style.compact)
                         }
                     }
-                    CenterLine("虚岁", ageValue, style.centerBodySp)
-                }
-                if (!style.compact) {
-                    CenterLine("星座", chart.sign, style.centerBodySp)
                 }
 
-                if (jieqiPillars.size == 4) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start,
-                    ) {
-                        Text(
-                            "节气四柱",
-                            fontSize = style.centerBodySp,
-                            color = IztroTheme.textMuted,
-                            lineHeight = style.centerBodySp * 1.15f,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
-                        FourPillarsRow(jieqiPillars, compact = style.compact)
+                if (!style.compact) {
+                    SelfMutagenLegend()
+                } else {
+                    SelfMutagenLegendCompact()
+                }
+
+                HoroscopeStepBar(
+                    dateText = chart.solarDate,
+                    hour = chart.timeIndex,
+                    canYearMinus = canYearMinus,
+                    canYearPlus = canYearPlus,
+                    canDayMinus = canDayMinus,
+                    canDayPlus = canDayPlus,
+                    canHourMinus = canHourMinus,
+                    canHourPlus = canHourPlus,
+                    onYearMinus = {
+                        if (canYearMinus) onBirthdayChange(birthDate.plusYears(-1).toIso())
+                    },
+                    onYearPlus = {
+                        if (canYearPlus) onBirthdayChange(birthDate.plusYears(1).toIso())
+                    },
+                    onDayMinus = {
+                        if (canDayMinus) onBirthdayChange(birthDate.plusDays(-1).toIso())
+                    },
+                    onDayPlus = {
+                        if (canDayPlus) onBirthdayChange(birthDate.plusDays(1).toIso())
+                    },
+                    onHourMinus = {
+                        if (canHourMinus) onBirthTimeChange(chart.timeIndex - 1)
+                    },
+                    onHourPlus = {
+                        if (canHourPlus) onBirthTimeChange(chart.timeIndex + 1)
+                    },
+                    showDecadal = showDecadal,
+                    showYearly = showYearly,
+                    showMonthly = showMonthly,
+                    showDaily = showDaily,
+                    showHourly = showHourly,
+                    onToggleScope = onToggleScope,
+                    compact = style.compact,
+                    btnSp = style.centerBtnSp,
+                    bodySp = style.centerBodySp,
+                )
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = if (centerPalaceAlign) Arrangement.Center else Arrangement.Start,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    AlgorithmSelector(lang, algorithm, onAlgorithmChange, compact = style.compact)
+                    if (algorithm != "default") {
+                        AstroTypeSelector(lang, astroType, onAstroTypeChange, compact = style.compact)
                     }
                 }
             }
+        }
+    }
+}
 
-            if (!style.compact) {
-                SelfMutagenLegend()
-            } else {
-                SelfMutagenLegendCompact()
+/** 中宫自适应：先量自然高度，超出可用高度则整体缩放字号（最低 0.55），仍放不下可滚动。 */
+private enum class CenterSlot { Probe, Fit, Fit2, Scroll }
+
+private const val CENTER_MIN_SCALE = 0.55f
+
+@Composable
+private fun CenterAutoFit(
+    style: AstrolabeStyle,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val w = constraints.maxWidth
+        if (w <= 0) {
+            return@SubcomposeLayout layout(0, 0) {}
+        }
+
+        // 1) 基准样式的自然高度
+        val probe = subcompose(CenterSlot.Probe) { content() }
+            .first()
+            .measure(Constraints(maxWidth = w, maxHeight = Constraints.Infinity))
+
+        // 高度无上限时直接用自然高度
+        val h = if (constraints.hasBoundedHeight) constraints.maxHeight else probe.height
+        if (h <= 0) {
+            return@SubcomposeLayout layout(w, 0) {}
+        }
+
+        var scale = if (probe.height > h) {
+            (h.toFloat() / probe.height.toFloat()).coerceIn(CENTER_MIN_SCALE, 1f)
+        } else {
+            1f
+        }
+
+        fun measureAt(slot: CenterSlot, s: Float) = subcompose(slot) {
+            CompositionLocalProvider(LocalAstrolabeStyle provides style.scaled(s)) { content() }
+        }
+            .first()
+            .measure(Constraints(maxWidth = w, maxHeight = Constraints.Infinity))
+
+        // 2) 未缩放时直接复用探针，省一遍中宫内容组合+测量
+        var placeable = if (scale == 1f) {
+            probe
+        } else {
+            measureAt(CenterSlot.Fit, scale)
+        }
+        if (placeable.height > h) {
+            val next = (scale * h.toFloat() / placeable.height.toFloat())
+                .coerceIn(CENTER_MIN_SCALE, 1f)
+            if (next < scale) {
+                scale = next
+                placeable = measureAt(CenterSlot.Fit2, scale)
             }
+        }
 
-            HoroscopeStepBar(
-                dateText = chart.solarDate,
-                hour = chart.timeIndex,
-                canYearMinus = canYearMinus,
-                canYearPlus = canYearPlus,
-                canDayMinus = canDayMinus,
-                canDayPlus = canDayPlus,
-                canHourMinus = canHourMinus,
-                canHourPlus = canHourPlus,
-                onYearMinus = {
-                    if (canYearMinus) onBirthdayChange(birthDate.plusYears(-1).toIso())
-                },
-                onYearPlus = {
-                    if (canYearPlus) onBirthdayChange(birthDate.plusYears(1).toIso())
-                },
-                onDayMinus = {
-                    if (canDayMinus) onBirthdayChange(birthDate.plusDays(-1).toIso())
-                },
-                onDayPlus = {
-                    if (canDayPlus) onBirthdayChange(birthDate.plusDays(1).toIso())
-                },
-                onHourMinus = {
-                    if (canHourMinus) onBirthTimeChange(chart.timeIndex - 1)
-                },
-                onHourPlus = {
-                    if (canHourPlus) onBirthTimeChange(chart.timeIndex + 1)
-                },
-                showDecadal = showDecadal,
-                showYearly = showYearly,
-                showMonthly = showMonthly,
-                showDaily = showDaily,
-                showHourly = showHourly,
-                onToggleScope = onToggleScope,
-                compact = style.compact,
-                btnSp = style.centerBtnSp,
-                bodySp = style.centerBodySp,
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = if (centerPalaceAlign) Arrangement.Center else Arrangement.Start,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                AlgorithmSelector(lang, algorithm, onAlgorithmChange, compact = style.compact)
-                if (algorithm != "default") {
-                    AstroTypeSelector(lang, astroType, onAstroTypeChange, compact = style.compact)
+        if (placeable.height <= h) {
+            layout(w, h) {
+                placeable.place(0, 0)
+            }
+        } else {
+            // 缩到最低仍放不下：允许滚动查看
+            val scroll = subcompose(CenterSlot.Scroll) {
+                CompositionLocalProvider(LocalAstrolabeStyle provides style.scaled(scale)) {
+                    Column(Modifier.verticalScroll(rememberScrollState())) { content() }
                 }
+            }
+                .first()
+                .measure(Constraints(maxWidth = w, maxHeight = h))
+            layout(w, h) {
+                scroll.place(0, 0)
             }
         }
     }
@@ -265,35 +348,41 @@ fun IzpalaceCenter(
 
 @Composable
 private fun SelfMutagenLegend() {
+    val style = LocalAstrolabeStyle.current
+    val labelSp = style.centerBodySp
+    val itemSp = style.centerBodySp * 1.08f
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text("点击宫位自化：", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
-        LegendItem("禄", IztroTheme.selfLu, 14.sp)
-        Text("→", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
-        LegendItem("权", IztroTheme.selfQuan, 14.sp)
-        Text("→", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
-        LegendItem("科", IztroTheme.selfKe, 14.sp)
-        Text("→", fontSize = 13.sp, color = IztroTheme.textMuted, lineHeight = 15.sp)
-        LegendItem("忌", IztroTheme.selfJi, 14.sp)
+        Text("点击宫位自化：", fontSize = labelSp, color = IztroTheme.textMuted, lineHeight = labelSp * 1.15f)
+        LegendItem("禄", IztroTheme.selfLu, itemSp)
+        Text("→", fontSize = labelSp, color = IztroTheme.textMuted, lineHeight = labelSp * 1.15f)
+        LegendItem("权", IztroTheme.selfQuan, itemSp)
+        Text("→", fontSize = labelSp, color = IztroTheme.textMuted, lineHeight = labelSp * 1.15f)
+        LegendItem("科", IztroTheme.selfKe, itemSp)
+        Text("→", fontSize = labelSp, color = IztroTheme.textMuted, lineHeight = labelSp * 1.15f)
+        LegendItem("忌", IztroTheme.selfJi, itemSp)
     }
 }
 
 @Composable
 private fun SelfMutagenLegendCompact() {
+    val style = LocalAstrolabeStyle.current
+    val labelSp = style.centerBodySp
+    val itemSp = style.centerBodySp * 1.08f
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text("自化", fontSize = 11.sp, color = IztroTheme.textMuted, lineHeight = 13.sp)
-        LegendItem("禄", IztroTheme.selfLu, 12.sp)
-        Text("→", fontSize = 11.sp, color = IztroTheme.textMuted)
-        LegendItem("权", IztroTheme.selfQuan, 12.sp)
-        Text("→", fontSize = 11.sp, color = IztroTheme.textMuted)
-        LegendItem("科", IztroTheme.selfKe, 12.sp)
-        Text("→", fontSize = 11.sp, color = IztroTheme.textMuted)
-        LegendItem("忌", IztroTheme.selfJi, 12.sp)
+        Text("自化", fontSize = labelSp, color = IztroTheme.textMuted, lineHeight = labelSp * 1.15f)
+        LegendItem("禄", IztroTheme.selfLu, itemSp)
+        Text("→", fontSize = labelSp, color = IztroTheme.textMuted)
+        LegendItem("权", IztroTheme.selfQuan, itemSp)
+        Text("→", fontSize = labelSp, color = IztroTheme.textMuted)
+        LegendItem("科", IztroTheme.selfKe, itemSp)
+        Text("→", fontSize = labelSp, color = IztroTheme.textMuted)
+        LegendItem("忌", IztroTheme.selfJi, itemSp)
     }
 }
 
@@ -372,6 +461,8 @@ private fun HoroscopeStepBar(
 
 @Composable
 private fun ScopeToggle(label: String, active: Boolean, compact: Boolean = false, onClick: () -> Unit) {
+    val style = LocalAstrolabeStyle.current
+    val size = style.centerBtnSp
     val bg = if (active) IztroTheme.scopeColor(
         when (label) {
             "大限" -> "decadal"
@@ -384,10 +475,10 @@ private fun ScopeToggle(label: String, active: Boolean, compact: Boolean = false
     val fg = if (active) Color.White else IztroTheme.chipInactiveFg
     Text(
         text = label,
-        fontSize = if (compact) 12.sp else 13.sp,
+        fontSize = size,
         fontWeight = FontWeight.SemiBold,
         color = fg,
-        lineHeight = if (compact) 14.sp else 15.sp,
+        lineHeight = size * 1.15f,
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))
             .background(bg)
@@ -438,27 +529,39 @@ private fun CenterLine(
 @Composable
 private fun FourPillarsRow(pillars: List<DemoFourPillar>, compact: Boolean = false) {
     val theme = IztroTheme
-    val stemSp = if (compact) 14.sp else 16.sp
-    Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp)) {
-        pillars.forEach { pillar ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(0.dp),
-            ) {
-                Text(
-                    pillar.stem,
-                    fontSize = stemSp,
-                    fontWeight = FontWeight.Bold,
-                    color = wuxingColor(stemElement(pillar.stem), theme),
-                    lineHeight = stemSp * 1.1f,
-                )
-                Text(
-                    pillar.branch,
-                    fontSize = stemSp,
-                    fontWeight = FontWeight.Bold,
-                    color = wuxingColor(branchElement(pillar.branch), theme),
-                    lineHeight = stemSp * 1.1f,
-                )
+    val style = LocalAstrolabeStyle.current
+    val baseSp = if (compact) style.centerBodySp * 1.25f else style.centerTitleSp * 1.15f
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val spacing = if (compact) 4.dp else 6.dp
+        val n = pillars.size.coerceAtLeast(1)
+        // 四组干支按可用宽等分，保证最后一柱不被裁掉
+        val fitPx = with(density) {
+            ((maxWidth.toPx() - spacing.toPx() * (n - 1)) / n).coerceAtLeast(1f)
+        }
+        val fitSp = with(density) { (fitPx / fontScale).sp }
+        val stemSp = if (fitSp.value < baseSp.value) fitSp else baseSp
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+            pillars.forEach { pillar ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    Text(
+                        pillar.stem,
+                        fontSize = stemSp,
+                        fontWeight = FontWeight.Bold,
+                        color = wuxingColor(stemElement(pillar.stem), theme),
+                        lineHeight = stemSp * 1.1f,
+                    )
+                    Text(
+                        pillar.branch,
+                        fontSize = stemSp,
+                        fontWeight = FontWeight.Bold,
+                        color = wuxingColor(branchElement(pillar.branch), theme),
+                        lineHeight = stemSp * 1.1f,
+                    )
+                }
             }
         }
     }
@@ -522,13 +625,14 @@ private fun AlgorithmSelector(
     var expanded by remember { mutableStateOf(false) }
     if (compact) {
         // 手机：小按钮下拉，避免巨大 TextField
+        val style = LocalAstrolabeStyle.current
         Box {
             Text(
                 text = when (algorithm) {
                     "zhongzhou" -> ReactUiStrings.t(lang, "algorithmZhongzhou")
                     else -> ReactUiStrings.t(lang, "algorithmDefault")
                 } + " ▾",
-                fontSize = 12.sp,
+                fontSize = style.centerBtnSp,
                 color = IztroTheme.quan,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
@@ -588,6 +692,7 @@ private fun AstroTypeSelector(
 ) {
     var expanded by remember { mutableStateOf(false) }
     if (compact) {
+        val style = LocalAstrolabeStyle.current
         Box {
             Text(
                 text = when (astroType) {
@@ -595,7 +700,7 @@ private fun AstroTypeSelector(
                     "human" -> ReactUiStrings.t(lang, "astroTypeHuman")
                     else -> ReactUiStrings.t(lang, "astroTypeHeaven")
                 } + " ▾",
-                fontSize = 12.sp,
+                fontSize = style.centerBtnSp,
                 color = IztroTheme.quan,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))

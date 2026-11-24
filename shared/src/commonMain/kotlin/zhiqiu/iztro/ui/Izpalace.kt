@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,7 +55,7 @@ import zhiqiu.iztro.DemoStar
 fun Izpalace(
     palace: DemoPalace,
     horoscope: DemoHoroscope?,
-    focusedIndex: Int?,
+    highlight: PalaceHighlight,
     activeHeavenlyStem: String?,
     hoverHeavenlyStem: String?,
     showDecadal: Boolean,
@@ -70,7 +71,6 @@ fun Izpalace(
     modifier: Modifier = Modifier,
 ) {
     val style = LocalAstrolabeStyle.current
-    val highlight = palaceHighlight(focusedIndex, palace.index)
     val bg = when (highlight) {
         PalaceHighlight.Focused -> IztroTheme.focusedPalaceBg
         PalaceHighlight.Opposite -> IztroTheme.oppositePalaceBg
@@ -144,7 +144,8 @@ fun Izpalace(
         // 星曜：实测整行宽后按可用宽整体缩放（含运星/gap/padding）
         PalaceLayout(
             modifier = Modifier.fillMaxSize(),
-            stars = {
+            stars = { maxStarHeightPx ->
+                val maxStarHeight = with(LocalDensity.current) { maxStarHeightPx.toDp() }
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -154,6 +155,7 @@ fun Izpalace(
                     StarFitRow(
                         modifier = Modifier.fillMaxWidth(),
                         availableWidth = cellContentWidth,
+                        maxHeight = maxStarHeight,
                         edgePad = 4.dp,
                     ) { starScale ->
                         Row(
@@ -202,7 +204,7 @@ fun Izpalace(
                 val palaceNameSp = style.palaceNameSp
                 val stemSp = style.stemBranchSp
                 val ageSp = style.ageSp
-                val decorSp = 11.sp
+                val decorSp = style.adjStarSp * 0.92f
                 val adjScale = 1f
                 Row(
                     Modifier
@@ -376,7 +378,8 @@ fun Izpalace(
 @Composable
 private fun PalaceLayout(
     modifier: Modifier = Modifier,
-    stars: @Composable () -> Unit,
+    /** maxHeightPx = 星曜区可用高度（px），字号据此自适应缩放，避免星曜/四化被裁 */
+    stars: @Composable (maxHeightPx: Int) -> Unit,
     /** narrow = 空间紧张（放右侧空白），年龄个数随之压缩 */
     ages: @Composable (narrow: Boolean) -> Unit,
     footer: @Composable () -> Unit,
@@ -387,19 +390,24 @@ private fun PalaceLayout(
         val gap = 2.dp.roundToPx()
         val minRightSpace = 28.dp.roundToPx()
 
+        // footer 自然高度（不裁切杂曜/宫名），钉在最底；各宫星曜区高度差异由全盘统一缩放消化
         val footerPlaceable = subcompose(PalaceSlot.Footer) { footer() }
             .first()
             .measure(Constraints.fixedWidth(w).copy(maxHeight = h))
-        val footerTop = (h - footerPlaceable.height).coerceAtLeast(0)
+        val footerH = footerPlaceable.height.coerceIn(0, h)
+        val footerTop = h - footerH
 
         // 先测窄版小限高度，从星曜区预留一条带，避免像午宫那样年龄叠在亮度上
         val agesNarrowProbe = subcompose(PalaceSlot.AgesNarrow) { ages(true) }
             .first()
             .measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = w))
-        val agesReserve = (agesNarrowProbe.height + gap).coerceAtMost(footerTop / 3)
+        // 小限区按实际所需高度预留，不能被 footerTop/3 砍掉，否则流年/小限会被裁掉半行
+        val agesReserve = (agesNarrowProbe.height + gap).coerceAtMost(footerTop)
 
         val starsMaxH = (footerTop - agesReserve).coerceAtLeast(1)
-        val starsPlaceable = subcompose(PalaceSlot.Stars) { stars() }
+        val starsPlaceable = subcompose(PalaceSlot.Stars) {
+            stars(starsMaxH)
+        }
             .first()
             .measure(constraints.copy(minWidth = 0, minHeight = 0, maxHeight = starsMaxH))
 
@@ -409,16 +417,23 @@ private fun PalaceLayout(
 
         val rightSpace = w - starsPlaceable.width - gap
         if (rightSpace >= minRightSpace) {
-            val rightAges = subcompose(PalaceSlot.Ages) { ages(true) }
-                .first()
-                .measure(
-                    constraints.copy(
-                        minWidth = 0,
-                        minHeight = 0,
-                        maxWidth = rightSpace,
-                        maxHeight = starsMaxH,
-                    ),
-                )
+            // 窄版探针已按窄版内容测过：宽度够就直接复用，省一次 subcompose
+            val rightAges = if (
+                agesNarrowProbe.width <= rightSpace && agesNarrowProbe.height <= starsMaxH
+            ) {
+                agesNarrowProbe
+            } else {
+                subcompose(PalaceSlot.Ages) { ages(true) }
+                    .first()
+                    .measure(
+                        constraints.copy(
+                            minWidth = 0,
+                            minHeight = 0,
+                            maxWidth = rightSpace,
+                            maxHeight = starsMaxH,
+                        ),
+                    )
+            }
             if (rightAges.width <= rightSpace) {
                 agesPlaceable = rightAges
                 agesX = w - rightAges.width
@@ -429,7 +444,14 @@ private fun PalaceLayout(
             // 星列占满宽：用预留带横铺，不再压回星曜亮度区
             agesPlaceable = subcompose(PalaceSlot.AgesWide) { ages(false) }
                 .first()
-                .measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = w, maxHeight = agesReserve.coerceAtLeast(1)))
+                .measure(
+                    constraints.copy(
+                        minWidth = 0,
+                        minHeight = 0,
+                        maxWidth = w,
+                        maxHeight = (footerTop - gap).coerceAtLeast(1),
+                    ),
+                )
             agesX = 0
             agesY = (footerTop - agesPlaceable.height - gap).coerceAtLeast(0)
         }
@@ -520,7 +542,7 @@ private fun AgesBlock(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     horoscopeNames.forEach { tag ->
-                        FateScopeLabel(tag, compact = style.compact) {
+                        FateScopeLabel(tag) {
                             if (tag.scope != "age") onToggleScope(tag.scope)
                         }
                     }
@@ -550,8 +572,8 @@ private fun AdjStar(star: DemoStar, nameSizeScale: Float = 1f) {
 @Composable
 private fun HoroStar(star: DemoStar, color: Color, densityScale: Float = 1f) {
     val style = LocalAstrolabeStyle.current
-    // 运星统一小号；与主/辅共用 fit scale，不再单独抬下限以免撑宽
-    val size = style.horoStarSp * densityScale.coerceIn(0.5f, 1f)
+    // 运星随全盘系数一起缩放（可略放大），不再卡死在 1f
+    val size = style.horoStarSp * densityScale.coerceIn(0.5f, 1.6f)
     val nameColor = when (star.type) {
         "lucun", "tough" -> IztroTheme.awesome
         "tianma", "helper" -> IztroTheme.active
@@ -569,15 +591,19 @@ private fun HoroStar(star: DemoStar, color: Color, densityScale: Float = 1f) {
 }
 
 /**
- * 按真实测得的星曜行宽（主/辅列 + 运星块 + gap）相对可用宽动态缩放字号。
- * 内容始终贴左；右侧留 edgePad 防裁切。只缩不放。
+ * 按真实测得的星曜行宽/高动态缩放字号：每宫按自己的空地灵活放大/缩小。
+ * - 宽度有余量就放大（吃掉宫格右侧空地），宽度不够就缩小
+ * - 放大后不能超出星曜区高度；星区本就放不下时不额外缩小（可上下滚动）
  */
 @Composable
 private fun StarFitRow(
     modifier: Modifier = Modifier,
     availableWidth: Dp,
+    maxHeight: Dp = Dp.Unspecified,
     edgePad: Dp = 4.dp,
-    minScale: Float = 0.48f,
+    minScale: Float = 0.42f,
+    /** 放大上限：星曜最多放大到基准字号的几倍（约 +2 号） */
+    maxScale: Float = 1.3f,
     content: @Composable (scale: Float) -> Unit,
 ) {
     SubcomposeLayout(modifier) { constraints ->
@@ -592,22 +618,38 @@ private fun StarFitRow(
         }
         // 贴左：左边不空，只在右侧留边距给末列（如阴煞）
         val usableW = (maxW - edgePad.roundToPx()).coerceAtLeast(1)
-        val looseH = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
-        val loose = Constraints(0, Constraints.Infinity, 0, looseH)
-
-        fun measureAt(slot: Any, scale: Float) =
-            subcompose(slot) { content(scale) }.first().measure(loose)
-
-        val probe = measureAt(StarFitSlot.Probe, 1f)
-        var scale = when {
-            probe.width <= 0 -> 1f
-            probe.width <= usableW -> 1f
-            else -> (usableW.toFloat() / probe.width.toFloat()).coerceIn(minScale, 1f)
+        // 高度预算：星曜区可用高度（含小限区让出的空间），用来防止竖向被裁
+        val hardMaxH = when {
+            maxHeight != Dp.Unspecified -> maxHeight.roundToPx().coerceAtLeast(1)
+            constraints.hasBoundedHeight -> constraints.maxHeight
+            else -> Constraints.Infinity
         }
-        var placeable = measureAt(StarFitSlot.Fit, scale)
-        if (placeable.width > usableW && scale > minScale) {
-            scale = (scale * usableW.toFloat() / placeable.width.toFloat()).coerceIn(minScale, 1f)
-            placeable = measureAt(StarFitSlot.Fit2, scale)
+        // 探针：不加约束，量出自然宽高
+        val probe = subcompose(StarFitSlot.Probe) { content(1f) }
+            .first()
+            .measure(Constraints(0, Constraints.Infinity, 0, Constraints.Infinity))
+        // 宽度上限：正好铺满可用宽（有余量就放大）
+        val wLimit = if (probe.width > 0) {
+            usableW.toFloat() / probe.width.toFloat()
+        } else {
+            1f
+        }
+        // 高度上限只限制放大，不额外压缩：星区本就放不下时交给纵向滚动
+        val hCap = if (hardMaxH != Constraints.Infinity && probe.height > 0) {
+            maxOf(1f, hardMaxH.toFloat() / probe.height.toFloat())
+        } else {
+            Float.MAX_VALUE
+        }
+        val scale = minOf(wLimit, hCap).coerceIn(minScale, maxScale)
+        // 无缩放且不超高时直接复用探针，省一遍宫星组合+测量
+        val placeable = if (scale == 1f && probe.height <= hardMaxH) {
+            probe
+        } else {
+            subcompose(StarFitSlot.Fit) {
+                content(scale)
+            }
+                .first()
+                .measure(Constraints(0, Constraints.Infinity, 0, hardMaxH))
         }
         // 占满宫格宽，星曜从 x=0 贴左排，避免缩完后看起来居中
         layout(maxW, placeable.height) {
@@ -616,7 +658,7 @@ private fun StarFitRow(
     }
 }
 
-private enum class StarFitSlot { Probe, Fit, Fit2 }
+private enum class StarFitSlot { Probe, Fit }
 
 @Composable
 private fun DynamicPalaceName(text: String, color: Color, scale: Float = 1f) {
@@ -654,14 +696,15 @@ private fun shortPalaceName(fullName: String): String = when {
 }
 
 @Composable
-private fun FateScopeLabel(tag: FateTag, compact: Boolean, onClick: () -> Unit) {
+private fun FateScopeLabel(tag: FateTag, onClick: () -> Unit) {
+    val style = LocalAstrolabeStyle.current
     val isActive = tag.show && tag.scope != "age"
     val bgColor = when {
         isActive -> IztroTheme.scopeColor(tag.scope)
         tag.scope == "age" -> Color.Transparent
         else -> IztroTheme.major
     }
-    val size = if (compact) 9.sp else 10.sp
+    val size = style.horoStarSp
     Text(
         text = buildString {
             append(shortScopeLabel(tag.scope, tag.name))

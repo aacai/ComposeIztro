@@ -87,11 +87,11 @@ fun Izstar(
         item.show && item.mutagen.indexOf(star.name) >= 0
     }
     val natalBadge = if (star.mutagen?.isNotEmpty() == true) 1 else 0
-    // 四化角标越多字号越小，减轻流时全开时的纵向压迫
+    // 四化角标越多字号越小，减轻流时全开时的纵向压迫；基准随盘面密度缩放
     val badgeSp = when {
-        natalBadge + scopeBadgeCount >= 5 -> 6.sp
-        natalBadge + scopeBadgeCount >= 3 -> 7.sp
-        else -> 8.sp
+        natalBadge + scopeBadgeCount >= 5 -> style.adjStarSp * 0.5f
+        natalBadge + scopeBadgeCount >= 3 -> style.adjStarSp * 0.58f
+        else -> style.adjStarSp * 0.66f
     }
 
     Row(

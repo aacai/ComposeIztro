@@ -9,6 +9,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
+ * 按统一密度系数缩放全部字号：十二宫与中宫用同一个系数，保证整盘视觉一致。
+ */
+fun AstrolabeStyle.scaled(factor: Float): AstrolabeStyle = copy(
+    majorStarSp = majorStarSp * factor,
+    minorStarSp = minorStarSp * factor,
+    brightSp = brightSp * factor,
+    adjStarSp = adjStarSp * factor,
+    horoStarSp = horoStarSp * factor,
+    palaceNameSp = palaceNameSp * factor,
+    stemBranchSp = stemBranchSp * factor,
+    ageSp = ageSp * factor,
+    centerTitleSp = centerTitleSp * factor,
+    centerBodySp = centerBodySp * factor,
+    centerBtnSp = centerBtnSp * factor,
+)
+
+/**
  * 盘面密度：手机窄屏用 compact，桌面用 comfortable。
  */
 data class AstrolabeStyle(
@@ -41,9 +58,9 @@ data class AstrolabeStyle(
             cellGap = 3.dp,
             cellPad = 3.dp,
             cellCorner = 8.dp,
-            // 外圈略大于中行一半；基准字偏舒适，挤时靠宫内 densityScale 动态收
-            rowWeightOuter = 1.15f,
-            rowWeightMid = 1.7f,
+            // 外圈行 1 份、中行 2 份：中行左右各叠两宫，十二宫高度完全一致
+            rowWeightOuter = 1f,
+            rowWeightMid = 2f,
             majorStarSp = 15.sp,
             minorStarSp = 14.sp,
             brightSp = 12.sp,
@@ -64,9 +81,9 @@ data class AstrolabeStyle(
             cellGap = 2.dp,
             cellPad = 2.dp,
             cellCorner = 5.dp,
-            // 中宫略矮腾给十二宫；基准字保持可读，疏密靠每宫 densityScale
-            rowWeightOuter = 1.2f,
-            rowWeightMid = 1.55f,
+            // 中行叠两宫：外圈 1 份、中行 2 份，十二宫高度一致
+            rowWeightOuter = 1f,
+            rowWeightMid = 2f,
             majorStarSp = 13.sp,
             minorStarSp = 12.sp,
             brightSp = 11.sp,
