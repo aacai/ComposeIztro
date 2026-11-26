@@ -147,13 +147,111 @@ fun MyApp() {
         fixLeap = true,                   // 闰月修复
         lang = "zh-CN",                   // zh-CN / zh-TW / en-US / ja-JP / ko-KR / vi-VN
         name = "示例",
-        astroType = "heaven",             // "heaven" 天盘 | "earth" 地盘 | "人盘"
+        astroType = "heaven",             // "heaven" 天盘 | "earth" 地盘 | "human" 人盘
         horoscopeDate = "2025-8-28",      // 运限目标日期
         horoscopeHour = 0,                // 运限时辰
         centerPalaceAlign = false,        // 中央面板对齐方式
     )
 }
 ```
+
+#### 白天 / 黑夜模式
+
+盘面色模式由 `IztroColorMode.Light` / `IztroColorMode.Dark` 控制，支持两种方式：
+
+```kotlin
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import zhiqiu.iztro.ui.IztroColorMode
+import zhiqiu.iztro.ui.Iztrolabe
+
+@Composable
+fun MyApp() {
+    var mode by remember { mutableStateOf(IztroColorMode.Light) }
+
+    Iztrolabe(
+        birthday = "2000-8-16",
+        birthTime = 2,
+        gender = "女",
+        // 非 null = 受控模式：宿主持有色模式状态
+        colorMode = mode,
+        onColorModeChange = { mode = it },
+    )
+}
+```
+
+- `colorMode = null`（默认）：盘面内部自管色模式，`onColorModeChange` 仍可监听变化。
+- `colorMode` 非 null：完全由宿主控制，盘面不会自己改状态。
+- 需要整体替换日/夜色板时用 `themeConfig`：
+
+```kotlin
+import androidx.compose.ui.graphics.Color
+import zhiqiu.iztro.ui.IztroColors
+import zhiqiu.iztro.ui.IztroThemeConfig
+
+val themeConfig = IztroThemeConfig.Default.copy(
+    lightTheme = IztroColors.Light.copy(boardBg = Color(0xFFF7F4ED)),
+    darkTheme = IztroColors.Dark.copy(boardBg = Color(0xFF121212)),
+)
+
+Iztrolabe(/* ... */, themeConfig = themeConfig)
+```
+
+宿主已有全局主题时，把全局色模式映射进来即可，例如：
+
+```kotlin
+val iztroMode = if (destinyColorMode == DestinyColorMode.Dark) {
+    IztroColorMode.Dark
+} else {
+    IztroColorMode.Light
+}
+
+Iztrolabe(
+    /* ... */
+    colorMode = iztroMode,
+    onColorModeChange = { mode ->
+        onColorModeChange(
+            if (mode == IztroColorMode.Dark) DestinyColorMode.Dark
+            else DestinyColorMode.Light
+        )
+    },
+)
+```
+
+#### 盘制（安星算法 + 天/地/人盘）
+
+盘制由 `options.algorithm` 和 `astroType` 两个参数决定：
+
+```kotlin
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import zhiqiu.iztro.IztroConfig
+import zhiqiu.iztro.ui.Iztrolabe
+
+@Composable
+fun MyApp() {
+    var algorithm by remember { mutableStateOf("default") }
+    var astroType by remember { mutableStateOf("heaven") }
+
+    Iztrolabe(
+        birthday = "2000-8-16",
+        birthTime = 2,
+        gender = "女",
+        options = IztroConfig(algorithm = algorithm),
+        astroType = astroType,
+    )
+}
+```
+
+- `algorithm`：`"default"` 通行版、`"zhongzhou"` 中州派。
+- `astroType`：`"heaven"` 天盘、`"earth"` 地盘、`"human"` 人盘。
+- 通行版只有天盘：`algorithm = "default"` 时组件会忽略 `astroType`，固定按 `"heaven"` 排盘；切到中州派后地盘/人盘设置才生效。
+- 改用 `IztrolabeProps` 时字段相同：`options = IztroConfig(algorithm = ...)`、`astroType = ...`。
+- 切换盘制只需修改宿主状态；组件会重新排盘。Destiny App 的切换入口在盘面页顶部设置按钮，中宫 chip 只展示当前盘制，不承载点击操作。
 
 #### 使用 Props 对象
 

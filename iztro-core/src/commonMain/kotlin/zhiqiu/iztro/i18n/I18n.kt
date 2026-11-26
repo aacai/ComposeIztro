@@ -36,7 +36,7 @@ internal val zhCN = mapOf(
     "longchi" to "龙池", "fengge" to "凤阁", "hongluan" to "红鸾", "guchen" to "孤辰", "guasu" to "寡宿",
     "feilian" to "蜚廉", "posui" to "破碎", "taifu" to "台辅", "fenggao" to "封诰", "tianwu" to "天巫", "tianyue" to "天月",
     "santai" to "三台", "bazuo" to "八座", "enguang" to "恩光", "tiangui" to "天贵", "tiancai" to "天才", "tianshou" to "天寿",
-    "jiekong" to "截空", "xunkong" to "旬空", "fuxunkong" to "副旬空", "kongwang" to "空亡", "jielu" to "截路", "yuede" to "月德",
+    "jiekong" to "截空", "xunkong" to "旬空", "fuxunkong" to "副旬", "kongwang" to "空亡", "jielu" to "截路", "yuede" to "月德",
     "tianshang" to "天伤", "tianshi" to "天使", "tianchu" to "天厨",
     "changsheng" to "长生", "muyu" to "沐浴", "guandai" to "冠带", "linguan" to "临官", "diwang" to "帝旺",
     "shuai" to "衰", "bing" to "病", "si" to "死", "mu" to "墓", "jue" to "绝", "tai" to "胎", "yang" to "养",

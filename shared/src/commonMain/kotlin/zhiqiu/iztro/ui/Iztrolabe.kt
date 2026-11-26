@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import zhiqiu.iztro.Algorithm
 import zhiqiu.iztro.AstroType
 import zhiqiu.iztro.DemoChart
@@ -326,6 +327,13 @@ private fun AstrolabeGrid(
                 showDaily = false
                 showHourly = false
             }
+            "daily" -> {
+                showDecadal = true
+                showYearly = true
+                showMonthly = true
+                showDaily = true
+                showHourly = false
+            }
         }
     }
 
@@ -415,12 +423,18 @@ private fun AstrolabeGrid(
     val stableOnHoverStem = remember(chart) { { stem: String? -> hoverHeavenlyStem = stem } }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize().background(IztroTheme.boardBg)) {
-        // 盘面直接占满可用高度：底部大运/运限时间轴由页面滚动查看，不再预留空间。
+        // 盘面按宽度比例收敛高度，避免高屏上宫格被拉得过高；底部时间轴仍由页面滚动查看。
+        val widthClass = rememberWindowWidthSizeClass()
+        val horoExpanded = showDaily || showHourly
         val boardWidth = maxWidth
-        val boardHeight = maxHeight.coerceIn(400.dp, 760.dp)
-        val baseStyle = rememberAstrolabeStyle(boardWidth)
+        // 日运/时运运星更多，盘面略增高给两列运星留空间
+        val boardHeight = minOf(
+            maxHeight,
+            boardWidth * 1.25f + if (horoExpanded) 56.dp else 0.dp,
+        ).coerceIn(400.dp, 760.dp)
+        val baseStyle = rememberAstrolabeStyle(widthClass)
         // 全盘统一密度系数：按外圈宫格实际高度估算一次，十二宫与中宫共用，保证整盘一致
-        val style = remember(baseStyle, boardHeight, chart) {
+        val style = remember(baseStyle, boardHeight, chart, widthClass, horoExpanded) {
             val totalWeight = baseStyle.rowWeightOuter * 2f + baseStyle.rowWeightMid
             val outerRowH = boardHeight.value * baseStyle.rowWeightOuter / totalWeight -
                 baseStyle.cellGap.value * 2f - baseStyle.cellPad.value * 2f
@@ -434,8 +448,22 @@ private fun AstrolabeGrid(
             val starNeed = baseStyle.majorStarSp.value * 2f * 1.12f +
                 baseStyle.brightSp.value * 2f * 1.12f +
                 baseStyle.adjStarSp.value * 0.66f * 1.2f
-            val factor = (outerRowH / (footerNeed + agesNeed + starNeed)).coerceIn(0.6f, 1f)
-            baseStyle.scaled(factor)
+            val factorMax = if (horoExpanded) 1.1f else 1f
+            val factor = (outerRowH / (footerNeed + agesNeed + starNeed)).coerceIn(0.6f, factorMax)
+            val scaled = baseStyle.scaled(factor)
+            // 窄屏再收 2 号星曜文字；宽屏保持原缩放
+            if (widthClass == WindowWidthSizeClass.Compact) {
+                scaled.copy(
+                    majorStarSp = (scaled.majorStarSp.value - 2f).sp,
+                    minorStarSp = (scaled.minorStarSp.value - 2f).sp,
+                    gradeBStarSp = (scaled.gradeBStarSp.value - 2f).sp,
+                    brightSp = (scaled.brightSp.value - 2f).sp,
+                    adjStarSp = (scaled.adjStarSp.value - 2f).sp,
+                    horoStarSp = (scaled.horoStarSp.value - 2f).sp,
+                )
+            } else {
+                scaled
+            }
         }
         Column(
             modifier = Modifier
@@ -548,9 +576,11 @@ private fun AstrolabeGrid(
         chart = chart,
         horoscope = horoscope,
         horoscopeDate = horoscopeDate,
+        horoscopeHour = horoscopeHour,
         showDecadal = showDecadal,
         showYearly = showYearly,
         showMonthly = showMonthly,
+        showDaily = showDaily,
         onSelectDecadal = { _, date ->
             onSetHoroscopeDate(date)
             activateScope("decadal")
@@ -563,6 +593,7 @@ private fun AstrolabeGrid(
             onSetHoroscopeDate(date)
             activateScope("monthly")
         },
+        onSelectDay = { activateScope("daily") },
         onSetHoroscopeDate = onSetHoroscopeDate,
         modifier = Modifier.fillMaxWidth(),
     )

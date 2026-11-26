@@ -16,20 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import zhiqiu.app.destiny.oinkcompat.DropdownMenuItem
-import zhiqiu.app.destiny.oinkcompat.ExperimentalMaterial3Api
-import zhiqiu.app.destiny.oinkcompat.ExposedDropdownMenu
-import zhiqiu.app.destiny.oinkcompat.ExposedDropdownMenuBox
-import zhiqiu.app.destiny.oinkcompat.ExposedDropdownMenuDefaults
-import zhiqiu.app.destiny.oinkcompat.menuAnchor
 import zhiqiu.app.destiny.oinkcompat.Text
-import zhiqiu.app.destiny.oinkcompat.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +42,7 @@ import zhiqiu.iztro.i18n.kot
 /**
  * 中宫：基本信息 + 自化说明 + 日/时步进
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 @Suppress("UNUSED_PARAMETER")
 fun IzpalaceCenter(
@@ -161,14 +150,6 @@ fun IzpalaceCenter(
                         color = IztroTheme.awesome,
                         lineHeight = style.centerBodySp * 1.15f,
                     )
-                    // 顶栏切换黑夜/白天，一眼能点到
-                    StepBtn(
-                        label = if (colorMode == IztroColorMode.Dark) "白天" else "黑夜",
-                        enabled = true,
-                        onClick = onToggleColorMode,
-                        fontSize = style.centerBtnSp,
-                        compact = style.compact,
-                    )
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(gap)) {
@@ -219,8 +200,6 @@ fun IzpalaceCenter(
                 }
 
                 HoroscopeStepBar(
-                    dateText = chart.solarDate,
-                    hour = chart.timeIndex,
                     canYearMinus = canYearMinus,
                     canYearPlus = canYearPlus,
                     canDayMinus = canDayMinus,
@@ -253,7 +232,6 @@ fun IzpalaceCenter(
                     onToggleScope = onToggleScope,
                     compact = style.compact,
                     btnSp = style.centerBtnSp,
-                    bodySp = style.centerBodySp,
                 )
 
                 FlowRow(
@@ -261,9 +239,9 @@ fun IzpalaceCenter(
                     horizontalArrangement = if (centerPalaceAlign) Arrangement.Center else Arrangement.Start,
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    AlgorithmSelector(lang, algorithm, onAlgorithmChange, compact = style.compact)
+                    StatusChip(algorithmLabel(lang, algorithm))
                     if (algorithm != "default") {
-                        AstroTypeSelector(lang, astroType, onAstroTypeChange, compact = style.compact)
+                        StatusChip(astroTypeLabel(lang, astroType))
                     }
                 }
             }
@@ -403,8 +381,6 @@ private fun LegendItem(
 
 @Composable
 private fun HoroscopeStepBar(
-    dateText: String,
-    hour: Int,
     canYearMinus: Boolean,
     canYearPlus: Boolean,
     canDayMinus: Boolean,
@@ -425,16 +401,8 @@ private fun HoroscopeStepBar(
     onToggleScope: (String) -> Unit,
     compact: Boolean = false,
     btnSp: androidx.compose.ui.unit.TextUnit = 14.sp,
-    bodySp: androidx.compose.ui.unit.TextUnit = 13.sp,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)) {
-        Text(
-            text = "排盘 $dateText　${CHINESE_HOURS.getOrElse(hour) { "$hour" }}",
-            fontSize = bodySp,
-            color = IztroTheme.focus,
-            lineHeight = bodySp * 1.15f,
-            maxLines = 1,
-        )
         Row(
             horizontalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -614,147 +582,29 @@ private fun lunarDayName(day: Int): String {
     return "${body}日"
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AlgorithmSelector(
-    lang: String,
-    algorithm: Algorithm,
-    onChange: (Algorithm) -> Unit,
-    compact: Boolean = false,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    if (compact) {
-        // 手机：小按钮下拉，避免巨大 TextField
-        val style = LocalAstrolabeStyle.current
-        Box {
-            Text(
-                text = when (algorithm) {
-                    "zhongzhou" -> ReactUiStrings.t(lang, "algorithmZhongzhou")
-                    else -> ReactUiStrings.t(lang, "algorithmDefault")
-                } + " ▾",
-                fontSize = style.centerBtnSp,
-                color = IztroTheme.quan,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(IztroTheme.stepBtnBg)
-                    .clickable { expanded = true }
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
-            )
-            zhiqiu.app.destiny.oinkcompat.DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "algorithmDefault"), fontSize = 14.sp) },
-                    onClick = { onChange("default"); expanded = false },
-                )
-                DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "algorithmZhongzhou"), fontSize = 14.sp) },
-                    onClick = { onChange("zhongzhou"); expanded = false },
-                )
-            }
-        }
-        return
-    }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        TextField(
-            value = when (algorithm) {
-                "zhongzhou" -> ReactUiStrings.t(lang, "algorithmZhongzhou")
-                else -> ReactUiStrings.t(lang, "algorithmDefault")
-            },
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(ReactUiStrings.t(lang, "labelAlgorithm"), fontSize = 12.sp) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor().padding(end = 4.dp),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "algorithmDefault"), fontSize = 14.sp) },
-                onClick = { onChange("default"); expanded = false },
-            )
-            DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "algorithmZhongzhou"), fontSize = 14.sp) },
-                onClick = { onChange("zhongzhou"); expanded = false },
-            )
-        }
-    }
+private fun StatusChip(text: String) {
+    val style = LocalAstrolabeStyle.current
+    Text(
+        text = text,
+        fontSize = style.centerBtnSp,
+        color = IztroTheme.quan,
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(IztroTheme.stepBtnBg)
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AstroTypeSelector(
-    lang: String,
-    astroType: AstroType,
-    onChange: (AstroType) -> Unit,
-    compact: Boolean = false,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    if (compact) {
-        val style = LocalAstrolabeStyle.current
-        Box {
-            Text(
-                text = when (astroType) {
-                    "earth" -> ReactUiStrings.t(lang, "astroTypeEarth")
-                    "human" -> ReactUiStrings.t(lang, "astroTypeHuman")
-                    else -> ReactUiStrings.t(lang, "astroTypeHeaven")
-                } + " ▾",
-                fontSize = style.centerBtnSp,
-                color = IztroTheme.quan,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(IztroTheme.stepBtnBg)
-                    .clickable { expanded = true }
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
-            )
-            zhiqiu.app.destiny.oinkcompat.DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "astroTypeHeaven"), fontSize = 14.sp) },
-                    onClick = { onChange("heaven"); expanded = false },
-                )
-                DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "astroTypeEarth"), fontSize = 14.sp) },
-                    onClick = { onChange("earth"); expanded = false },
-                )
-                DropdownMenuItem(
-                    text = { Text(ReactUiStrings.t(lang, "astroTypeHuman"), fontSize = 14.sp) },
-                    onClick = { onChange("human"); expanded = false },
-                )
-            }
-        }
-        return
+private fun algorithmLabel(lang: String, algorithm: Algorithm): String =
+    when (algorithm) {
+        "zhongzhou" -> ReactUiStrings.t(lang, "algorithmZhongzhou")
+        else -> ReactUiStrings.t(lang, "algorithmDefault")
     }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        TextField(
-            value = when (astroType) {
-                "earth" -> ReactUiStrings.t(lang, "astroTypeEarth")
-                "human" -> ReactUiStrings.t(lang, "astroTypeHuman")
-                else -> ReactUiStrings.t(lang, "astroTypeHeaven")
-            },
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(ReactUiStrings.t(lang, "labelAstroType"), fontSize = 12.sp) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "astroTypeHeaven"), fontSize = 14.sp) },
-                onClick = { onChange("heaven"); expanded = false },
-            )
-            DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "astroTypeEarth"), fontSize = 14.sp) },
-                onClick = { onChange("earth"); expanded = false },
-            )
-            DropdownMenuItem(
-                text = { Text(ReactUiStrings.t(lang, "astroTypeHuman"), fontSize = 14.sp) },
-                onClick = { onChange("human"); expanded = false },
-            )
-        }
+
+private fun astroTypeLabel(lang: String, astroType: AstroType): String =
+    when (astroType) {
+        "earth" -> ReactUiStrings.t(lang, "astroTypeEarth")
+        "human" -> ReactUiStrings.t(lang, "astroTypeHuman")
+        else -> ReactUiStrings.t(lang, "astroTypeHeaven")
     }
-}

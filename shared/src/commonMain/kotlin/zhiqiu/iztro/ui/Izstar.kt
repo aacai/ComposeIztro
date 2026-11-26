@@ -36,7 +36,7 @@ data class HoroscopeMutagenDisplay(
 /**
  * 星曜竖排：
  * - 星名一字一行；亮度黑字无背景
- * - 本命四化：红底白字科权禄忌
+ * - 本命四化：白字角标按禄绿/权棕/科蓝/忌红着色，与自化示例色一致
  * - 点击宫位后：按该宫干飞星/自化，星名背景着色（禄绿/权棕/科蓝/忌红）
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -71,10 +71,11 @@ fun Izstar(
     val hoverBarColor = hoverMutagenIndex?.let { theme.selfMutagenBgs[it] }
     val barHeight = 3.dp
     val density = LocalDensity.current
-    // 主星略大、辅星/乙级用 minor；均吃 nameSizeScale（多列宫如父母宫靠它收宽度）
+    // 主星与辅星同号，乙级星小一号；均吃 nameSizeScale（多列宫如父母宫靠它收宽度）
     val baseNameSp = when {
         horizontal -> style.adjStarSp
         star.type == "major" -> style.majorStarSp
+        star.type == "adjective" || star.type == "flower" -> style.gradeBStarSp
         else -> style.minorStarSp
     }
     val nameSize = baseNameSp * nameSizeScale
@@ -88,11 +89,11 @@ fun Izstar(
     }
     val natalBadge = if (star.mutagen?.isNotEmpty() == true) 1 else 0
     // 四化角标越多字号越小，减轻流时全开时的纵向压迫；基准随盘面密度缩放
-    val badgeSp = when {
-        natalBadge + scopeBadgeCount >= 5 -> style.adjStarSp * 0.5f
-        natalBadge + scopeBadgeCount >= 3 -> style.adjStarSp * 0.58f
-        else -> style.adjStarSp * 0.66f
-    }
+    val badgeSp = (when {
+        natalBadge + scopeBadgeCount >= 5 -> style.adjStarSp.value * 0.5f
+        natalBadge + scopeBadgeCount >= 3 -> style.adjStarSp.value * 0.58f
+        else -> style.adjStarSp.value * 0.66f
+    } + 4f).sp
 
     Row(
         modifier = modifier
@@ -168,6 +169,9 @@ fun Izstar(
             }
 
             star.mutagen?.takeIf { it.isNotEmpty() }?.let { mutagen ->
+                val badgeColor = theme.selfMutagenBgs.getOrElse(
+                    MUTAGEN_LABELS.indexOf(mutagen),
+                ) { theme.mutagenBadgeRed }
                 Text(
                     text = mutagen,
                     fontSize = badgeSp,
@@ -176,7 +180,7 @@ fun Izstar(
                     modifier = Modifier
                         .padding(top = 1.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(theme.mutagenBadgeRed)
+                        .background(badgeColor)
                         .padding(horizontal = 2.dp, vertical = 0.dp),
                 )
             }
@@ -192,6 +196,7 @@ fun Izstar(
                     horizontalArrangement = Arrangement.spacedBy(1.dp),
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                     modifier = Modifier.padding(top = 1.dp),
+                    maxItemsInEachRow = 2,
                 ) {
                     scopeBadges.forEach { (scope, label) ->
                         Text(

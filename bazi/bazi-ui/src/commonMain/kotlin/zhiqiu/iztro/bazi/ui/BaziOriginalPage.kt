@@ -50,22 +50,29 @@ enum class BaziElementType {
 /**
  * 原局盘面。宿主负责排盘：传入 [chart]（如 `profile.toOriginalChart()`）。
  * 排盘失败由宿主处理（构造不出 chart 就不进本页）。
- * [onBaziElementClick] 在点击神煞 / 十神等八字元素时回调，宿主可据此弹出释义等。
+ * [onTenGodClick] 在点击干神 / 支神中的十神时回调，宿主可据此展示释义。
+ * 未传 [onTenGodClick] 时回退到 [onBaziElementClick] 的 [BaziElementType.TenGod] 事件。
  */
 @Composable
 fun BaziOriginalPage(
     chart: OriginalChart,
     onBaziElementClick: ((type: BaziElementType, name: String) -> Unit)? = null,
+    onTenGodClick: ((name: String) -> Unit)? = null,
 ) {
-    OriginalBody(chart, onBaziElementClick)
+    OriginalBody(chart, onBaziElementClick, onTenGodClick)
 }
 
 @Composable
 fun OriginalBody(
     chart: OriginalChart,
     onBaziElementClick: ((type: BaziElementType, name: String) -> Unit)? = null,
+    onTenGodClick: ((name: String) -> Unit)? = null,
 ) {
     val pillars = chart.pillars
+    val tenGodClick: ((String) -> Unit)? = onTenGodClick
+        ?: onBaziElementClick?.let { callback ->
+            { name: String -> callback(BaziElementType.TenGod, name) }
+        }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -104,6 +111,9 @@ fun OriginalBody(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         lineHeight = 12.sp,
+                        modifier = Modifier.clickable(enabled = tenGodClick != null) {
+                            tenGodClick?.invoke(p.stemGod)
+                        },
                     )
                 }
             }
@@ -157,8 +167,8 @@ fun OriginalBody(
                                 color = WuXingColors.ofElement(h.element),
                                 fontSize = 11.sp,
                                 lineHeight = 11.sp,
-                                modifier = Modifier.clickable(enabled = onBaziElementClick != null) {
-                                    onBaziElementClick?.invoke(BaziElementType.TenGod, h.tenGod)
+                                modifier = Modifier.clickable(enabled = tenGodClick != null) {
+                                    tenGodClick?.invoke(h.tenGod)
                                 },
                             )
                         }

@@ -39,7 +39,7 @@ fun getHoroscopeStar(
 
     if (scope == "yearly") {
         val nianjieIndex = getNianjieIndex(earthlyBranchKey)
-        stars[nianjieIndex].add(Star(name = t("nianjie"), type = "helper", scope = "yearly"))
+        stars[nianjieIndex].add(Star(name = t("nianjie"), type = "adjective", scope = "yearly"))
     }
 
     fun add(idx: Int, key: String, type: String) {

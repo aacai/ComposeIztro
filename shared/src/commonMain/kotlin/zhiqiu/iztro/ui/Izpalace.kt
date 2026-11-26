@@ -179,7 +179,7 @@ fun Izpalace(
                                     modifier = Modifier.padding(start = 3.dp),
                                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                                     verticalArrangement = Arrangement.spacedBy(1.dp),
-                                    maxItemsInEachRow = 3,
+                                    maxItemsInEachRow = 2,
                                 ) {
                                     decadalStars.forEach { HoroStar(it, IztroTheme.active, starScale) }
                                     yearlyStars.forEach { HoroStar(it, IztroTheme.decorator2, starScale) }

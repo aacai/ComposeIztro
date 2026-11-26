@@ -3,6 +3,8 @@ package zhiqiu.iztro.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -14,6 +16,7 @@ import androidx.compose.ui.unit.sp
 fun AstrolabeStyle.scaled(factor: Float): AstrolabeStyle = copy(
     majorStarSp = majorStarSp * factor,
     minorStarSp = minorStarSp * factor,
+    gradeBStarSp = gradeBStarSp * factor,
     brightSp = brightSp * factor,
     adjStarSp = adjStarSp * factor,
     horoStarSp = horoStarSp * factor,
@@ -39,6 +42,8 @@ data class AstrolabeStyle(
     val rowWeightMid: Float,
     val majorStarSp: TextUnit,
     val minorStarSp: TextUnit,
+    /** 乙级星：比辅星小一号 */
+    val gradeBStarSp: TextUnit,
     val brightSp: TextUnit,
     val adjStarSp: TextUnit,
     /** 大限/流年运星（运月运魁等），小于主星 */
@@ -61,8 +66,9 @@ data class AstrolabeStyle(
             // 外圈行 1 份、中行 2 份：中行左右各叠两宫，十二宫高度完全一致
             rowWeightOuter = 1f,
             rowWeightMid = 2f,
-            majorStarSp = 15.sp,
+            majorStarSp = 14.sp,
             minorStarSp = 14.sp,
+            gradeBStarSp = 13.sp,
             brightSp = 12.sp,
             adjStarSp = 12.sp,
             horoStarSp = 9.sp,
@@ -84,8 +90,9 @@ data class AstrolabeStyle(
             // 中行叠两宫：外圈 1 份、中行 2 份，十二宫高度一致
             rowWeightOuter = 1f,
             rowWeightMid = 2f,
-            majorStarSp = 13.sp,
+            majorStarSp = 12.sp,
             minorStarSp = 12.sp,
+            gradeBStarSp = 11.sp,
             brightSp = 11.sp,
             adjStarSp = 10.sp,
             horoStarSp = 8.sp,
@@ -99,13 +106,30 @@ data class AstrolabeStyle(
             showPalaceDecor = false,
         )
 
-        fun forWidth(width: Dp): AstrolabeStyle =
-            if (width < 600.dp) Compact else Comfortable
+        fun forWidthClass(widthClass: WindowWidthSizeClass): AstrolabeStyle =
+            if (widthClass == WindowWidthSizeClass.Compact) Compact else Comfortable
     }
 }
 
 val LocalAstrolabeStyle = compositionLocalOf { AstrolabeStyle.Comfortable }
 
+/** 按窗口宽度划分盘面密度断点：<600dp 紧凑，600~839dp 中等，>=840dp 展开。 */
+enum class WindowWidthSizeClass { Compact, Medium, Expanded }
+
 @Composable
-fun rememberAstrolabeStyle(maxWidth: Dp): AstrolabeStyle =
-    remember(maxWidth) { AstrolabeStyle.forWidth(maxWidth) }
+fun rememberWindowWidthSizeClass(): WindowWidthSizeClass {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val width = with(density) { windowInfo.containerSize.width.toDp() }
+    return remember(width) {
+        when {
+            width < 600.dp -> WindowWidthSizeClass.Compact
+            width < 840.dp -> WindowWidthSizeClass.Medium
+            else -> WindowWidthSizeClass.Expanded
+        }
+    }
+}
+
+@Composable
+fun rememberAstrolabeStyle(widthClass: WindowWidthSizeClass): AstrolabeStyle =
+    remember(widthClass) { AstrolabeStyle.forWidthClass(widthClass) }

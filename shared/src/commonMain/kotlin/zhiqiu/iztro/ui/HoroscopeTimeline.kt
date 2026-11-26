@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import zhiqiu.iztro.DemoChart
 import zhiqiu.iztro.DemoHoroscope
 import zhiqiu.iztro.DemoPalace
+import zhiqiu.iztro.calendar.Calendar
 import zhiqiu.iztro.data.CALENDAR_EARTHLY_BRANCHES
 import zhiqiu.iztro.data.CALENDAR_HEAVENLY_STEMS
 import zhiqiu.iztro.data.FIVE_TIGER
@@ -45,12 +46,15 @@ fun HoroscopeTimeline(
     chart: DemoChart,
     horoscope: DemoHoroscope,
     horoscopeDate: String,
+    horoscopeHour: Int,
     showDecadal: Boolean,
     showYearly: Boolean,
     showMonthly: Boolean,
+    showDaily: Boolean,
     onSelectDecadal: (palaceIndex: Int, solarDate: String) -> Unit,
     onSelectYear: (solarDate: String) -> Unit,
     onSelectMonth: (solarDate: String) -> Unit,
+    onSelectDay: () -> Unit,
     onSetHoroscopeDate: (solarDate: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -72,6 +76,34 @@ fun HoroscopeTimeline(
     val monthYear = selectedLunarYear.takeIf { it > 0 }
         ?: yearChips.firstOrNull()?.lunarYear
         ?: (chart.rawLunar.lunarYear + (selectedDecadal?.decadalStart ?: 1) - 1)
+
+    val daily = horoscope.daily
+    val dailyPalace = chart.palaces.getOrNull(daily.index)
+    val dailyStars = daily.stars.getOrNull(daily.index).orEmpty()
+    val monthDates = remember(horoscopeDate) {
+        val base = runCatching { SolarDate.parse(horoscopeDate) }.getOrNull()
+            ?: return@remember emptyList<SolarDate>()
+        val lastDay = SolarDate(base.year, base.month, 1).plusMonths(1).plusDays(-1).day
+        (1..lastDay).map { SolarDate(base.year, base.month, it) }
+    }
+    val dayBranchByDate = remember(monthDates, horoscopeHour) {
+        monthDates.associate { date ->
+            date.toIso() to Calendar.getHeavenlyStemAndEarthlyBranchBySolarDate(
+                date.toIso(),
+                horoscopeHour,
+            ).daily.second
+        }
+    }
+    val currentDate = runCatching { SolarDate.parse(horoscopeDate) }.getOrNull()
+    val todayIndex = monthDates.indexOfFirst { date ->
+        currentDate != null && date.year == currentDate.year &&
+            date.month == currentDate.month && date.day == currentDate.day
+    }.takeIf { it >= 0 } ?: 0
+    val firstVisible = (todayIndex - 2).coerceAtLeast(0)
+    val dayListState = rememberLazyListState(initialFirstVisibleItemIndex = firstVisible)
+    LaunchedEffect(horoscopeDate) {
+        dayListState.animateScrollToItem(firstVisible)
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -125,6 +157,23 @@ fun HoroscopeTimeline(
                             )
                         }
                     }
+                    TimelineRow(label = "日运") {
+                        monthDates.forEach { date ->
+                            val selected = showDaily && currentDate != null &&
+                                date.year == currentDate.year &&
+                                date.month == currentDate.month && date.day == currentDate.day
+                            TimelineChip(
+                                primary = "${date.day}日",
+                                secondary = dayBranchByDate[date.toIso()].orEmpty(),
+                                selected = selected,
+                                selectedColor = IztroTheme.scopePalaceDaily,
+                                onClick = {
+                                    onSetHoroscopeDate(date.toIso())
+                                    onSelectDay()
+                                },
+                            )
+                        }
+                    }
                     Text(
                         text = "运限日 $horoscopeDate · ${horoscope.lunarDate}",
                         fontSize = 9.sp,
@@ -135,25 +184,6 @@ fun HoroscopeTimeline(
             }
         }
 
-        val daily = horoscope.daily
-        val dailyPalace = chart.palaces.getOrNull(daily.index)
-        val dailyStars = daily.stars.getOrNull(daily.index).orEmpty()
-        val monthDates = remember(horoscopeDate) {
-            val base = runCatching { SolarDate.parse(horoscopeDate) }.getOrNull()
-                ?: return@remember emptyList<SolarDate>()
-            val lastDay = SolarDate(base.year, base.month, 1).plusMonths(1).plusDays(-1).day
-            (1..lastDay).map { SolarDate(base.year, base.month, it) }
-        }
-        val currentDate = runCatching { SolarDate.parse(horoscopeDate) }.getOrNull()
-        val todayIndex = monthDates.indexOfFirst { date ->
-            currentDate != null && date.year == currentDate.year &&
-                date.month == currentDate.month && date.day == currentDate.day
-        }.takeIf { it >= 0 } ?: 0
-        val firstVisible = (todayIndex - 2).coerceAtLeast(0)
-        val dayListState = rememberLazyListState(initialFirstVisibleItemIndex = firstVisible)
-        LaunchedEffect(horoscopeDate) {
-            dayListState.animateScrollToItem(firstVisible)
-        }
         Section(title = "日运") {
             Card(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -192,7 +222,7 @@ fun HoroscopeTimeline(
                                 date.month == currentDate.month && date.day == currentDate.day
                             TimelineChip(
                                 primary = "${date.day}日",
-                                secondary = CALENDAR_EARTHLY_BRANCHES[(date.year - 4).mod(12)],
+                                secondary = dayBranchByDate[date.toIso()].orEmpty(),
                                 selected = selected,
                                 selectedColor = IztroTheme.scopePalaceDaily,
                                 onClick = { onSetHoroscopeDate(date.toIso()) },

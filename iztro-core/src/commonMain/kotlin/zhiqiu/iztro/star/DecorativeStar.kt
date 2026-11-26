@@ -36,8 +36,8 @@ fun getAdjectiveStar(param: AstrolabeParam): List<List<Star>> {
 
     // 红鸾天喜三台八座已移入 minorStars（竖排展示）
     add(monthlyIndex.tianyaoIndex, "tianyao", "flower")
-    add(yearlyIndex.xianchiIndex, "xianchi", "flower")
-    add(monthlyIndex.yuejieIndex, "jieshen", "helper")
+    add(yearlyIndex.xianchiIndex, "xianchi", "adjective")
+    add(monthlyIndex.yuejieIndex, "jieshen", "adjective")
     add(dailyIndex.enguangIndex, "enguang", "adjective")
     add(dailyIndex.tianguiIndex, "tiangui", "adjective")
     add(yearlyIndex.longchiIndex, "longchi", "adjective")
@@ -80,7 +80,7 @@ fun getAdjectiveStar(param: AstrolabeParam): List<List<Star>> {
     add(yearlyIndex.tianxuIndex, "tianxu", "adjective")
     add(yearlyIndex.tianshiIndex, "tianshi", "adjective")
     add(yearlyIndex.tianshangIndex, "tianshang", "adjective")
-    add(yearlyIndex.nianjieIndex, "nianjie", "helper")
+    add(yearlyIndex.nianjieIndex, "nianjie", "adjective")
 
     return stars
 }
